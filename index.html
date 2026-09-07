@@ -20389,6 +20389,14 @@ select option{background:var(--card2)}
     <div style="font-size:.65rem;color:var(--muted);margin-top:6px;line-height:1.4;">Speichern = JSON-Datei herunterladen. Laden = gespeicherte Datei wieder einlesen.</div>
   </div>
 
+  <!-- ROMAN-BIBEL BUTTON -->
+  <div style="padding:12px 16px;border-top:1px solid var(--border);">
+    <button onclick="goStep('bibel')" style="width:100%;background:linear-gradient(135deg,rgba(212,168,67,0.14),rgba(83,74,183,0.14));border:1px solid rgba(212,168,67,0.4);border-radius:8px;padding:10px 14px;cursor:pointer;text-align:left;transition:all .2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(212,168,67,0.4)'">
+      <div style="font-size:.82rem;font-weight:700;color:var(--gold-lt);">📔 Roman-Bibel</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:2px;">Personen · Recherche · Plot</div>
+    </button>
+  </div>
+
   <!-- LEKTORAT BUTTON -->
   <div style="padding:12px 16px;border-top:1px solid var(--border);">
     <button onclick="goStep('lektorat')" style="width:100%;background:linear-gradient(135deg,rgba(83,74,183,0.15),rgba(29,158,117,0.15));border:1px solid rgba(83,74,183,0.4);border-radius:8px;padding:10px 14px;cursor:pointer;text-align:left;transition:all .2s;" onmouseover="this.style.borderColor='#534AB7'" onmouseout="this.style.borderColor='rgba(83,74,183,0.4)'">
@@ -20742,6 +20750,76 @@ select option{background:var(--card2)}
     </div>
   </div>
 
+  <!-- ── ROMAN-BIBEL PAGE ──────────────────────────────────────────── -->
+  <div class="page" id="page-bibel">
+    <div class="panel-hd" style="padding:24px 32px 16px;">
+      <div class="panel-title" style="font-size:1.4rem;font-weight:800;color:var(--gold-lt);">📔 Roman-Bibel</div>
+      <div class="panel-sub" style="color:var(--muted);font-size:.85rem;margin-top:4px;">Personen, Recherche und Plot — fließt beim Schreiben automatisch in jedes Kapitel ein</div>
+    </div>
+    <div style="padding:0 32px 32px;">
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;">
+        <button id="bb-tab-people"   onclick="bbTab('people')"   style="padding:9px 18px;border-radius:99px;border:1px solid var(--gold-dk);background:rgba(212,168,67,0.1);color:var(--gold-lt);font-size:.82rem;cursor:pointer;font-weight:600;">👥 Personen</button>
+        <button id="bb-tab-research" onclick="bbTab('research')" style="padding:9px 18px;border-radius:99px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--muted);font-size:.82rem;cursor:pointer;">🔎 Recherche</button>
+        <button id="bb-tab-plot"     onclick="bbTab('plot')"     style="padding:9px 18px;border-radius:99px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--muted);font-size:.82rem;cursor:pointer;">🧭 Plot</button>
+      </div>
+
+      <!-- ═══ PERSONEN ═══ -->
+      <div id="bb-pane-people">
+        <div style="background:rgba(83,74,183,0.1);border:1px solid rgba(83,74,183,0.3);border-radius:10px;padding:14px 18px;font-size:.85rem;color:#AFA9EC;margin-bottom:18px;line-height:1.6;">
+          Jede Person, die du hier anlegst, kennt die KI beim Schreiben — mit Aussehen, Charakter und vor allem Sprechweise. Das ist der beste Hebel gegen Figuren, die alle gleich klingen.
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+          <button class="btn btn-gold" onclick="bbAddPerson()">+ Person anlegen</button>
+          <button class="btn btn-outline btn-sm" onclick="bbSuggestPeople()">✨ KI schlägt Besetzung vor</button>
+          <button class="btn btn-outline btn-sm" onclick="bbCheckNames()">🔤 Namen prüfen</button>
+        </div>
+
+        <div id="bb-name-warn" style="display:none;border:1px solid rgba(224,133,133,0.4);background:rgba(198,80,80,0.1);border-radius:8px;padding:12px 16px;font-size:.82rem;color:#E08585;margin-bottom:16px;line-height:1.6;"></div>
+        <div id="bb-people-list"></div>
+      </div>
+
+      <!-- ═══ RECHERCHE ═══ -->
+      <div id="bb-pane-research" style="display:none;">
+        <div style="background:rgba(83,74,183,0.1);border:1px solid rgba(83,74,183,0.3);border-radius:10px;padding:14px 18px;font-size:.85rem;color:#AFA9EC;margin-bottom:18px;line-height:1.6;">
+          Thema eingeben, die KI legt dir ein Fachdossier an: Abläufe, Fachbegriffe, wer was darf, und die typischen Fehler, an denen Leser merken, dass der Autor nicht recherchiert hat.
+          <br><span style="color:var(--muted);">Das ist Wissen aus dem KI-Modell, kein Behördenauszug — bei harten Fakten (Paragrafen, Dienstgrade, Jahreszahlen) bitte gegenprüfen.</span>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <input id="bb-research-topic" placeholder="z. B. Mordkommission Sachsen — Ablauf am Fundort" style="flex:1;min-width:260px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--ink2);font-size:.86rem;outline:none;">
+          <select id="bb-research-depth" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:11px 12px;color:var(--ink2);font-size:.82rem;outline:none;">
+            <option value="kurz">Kurz — Überblick</option>
+            <option value="mittel" selected>Mittel — Arbeitsdossier</option>
+            <option value="tief">Tief — alles ins Detail</option>
+          </select>
+          <button class="btn btn-gold" onclick="bbResearch()">🔎 Recherchieren</button>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:20px;">Vorschläge: Polizeiarbeit · Mafia-Strukturen · Gerichtsmedizin · Waffen · Drogenhandel · IT-Forensik · Gefängnisalltag · Staatsanwaltschaft</div>
+
+        <div id="bb-research-list"></div>
+      </div>
+
+      <!-- ═══ PLOT ═══ -->
+      <div id="bb-pane-plot" style="display:none;">
+        <div style="background:rgba(83,74,183,0.1);border:1px solid rgba(83,74,183,0.3);border-radius:10px;padding:14px 18px;font-size:.85rem;color:#AFA9EC;margin-bottom:18px;line-height:1.6;">
+          Acht Plotpunkte halten den Spannungsbogen. Du kannst sie leer anlegen und selbst füllen oder von der KI einen Vorschlag machen lassen und dann umschreiben.
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+          <button class="btn btn-gold" onclick="bbPlotSkeleton()">🧭 Plot-Gerüst anlegen</button>
+          <button class="btn btn-outline btn-sm" onclick="bbSuggestPlot()">✨ KI füllt das Gerüst</button>
+          <button class="btn btn-outline btn-sm" onclick="bbPlotToToc()">→ ins Inhaltsverzeichnis</button>
+        </div>
+
+        <div id="bb-plot-list"></div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ── LEKTORAT PAGE ─────────────────────────────────────────────── -->
   <div class="page" id="page-lektorat">
     <div class="panel-hd" style="padding:24px 32px 16px;">
@@ -20751,7 +20829,7 @@ select option{background:var(--card2)}
     <div style="padding:0 32px 32px;">
 
       <div style="background:rgba(83,74,183,0.1);border:1px solid rgba(83,74,183,0.3);border-radius:10px;padding:14px 18px;font-size:.85rem;color:#AFA9EC;margin-bottom:20px;line-height:1.6;">
-        ✨ Word-Datei hochladen oder aktuelles Buch direkt laden. Füllwörter werden ersetzt — nicht gestrichen. Die Textlänge bleibt erhalten.
+        ✨ Word-Datei hochladen oder aktuelles Buch direkt laden. Füllwörter werden ersetzt, überstrapazierte Floskeln bekommen ein Kontingent fürs ganze Buch — was darüber liegt, fliegt raus.
       </div>
 
       <!-- Modus -->
@@ -20776,6 +20854,19 @@ select option{background:var(--card2)}
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
         <button class="btn btn-gold" onclick="lkAnalyze()">Text analysieren →</button>
         <button class="btn btn-outline btn-sm" onclick="lkFromBook()">📚 Aktuelles Buch laden</button>
+        <button class="btn btn-outline btn-sm" onclick="lkScanFloskeln(true)">🔍 Floskeln zählen</button>
+      </div>
+
+      <!-- Floskel-Report -->
+      <div id="lk-floskel-area" style="display:none;margin-bottom:20px;border:1px solid rgba(212,168,67,0.35);border-radius:10px;padding:16px 18px;background:rgba(212,168,67,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <strong style="color:var(--gold-lt);font-size:.9rem;">🔍 Floskel-Check</strong>
+          <span id="lk-floskel-sum" style="font-size:.75rem;color:var(--muted);"></span>
+        </div>
+        <div id="lk-floskel-list" style="margin-top:10px;"></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:10px;line-height:1.6;">
+          Das Kontingent gilt fürs ganze Buch und wächst mit der Textlänge. Beim Lektorieren bekommt jedes Kapitel seinen Anteil — alles darüber wird gestrichen oder durch etwas Szenen-Eigenes ersetzt.
+        </div>
       </div>
 
       <!-- Kapitel Liste -->
@@ -20828,6 +20919,9 @@ const S = {
   toc: [],          // [{id,title,description}]
   chapters: {},     // {id: text}
   currentChapter: null,
+  people: [],       // Personenregister
+  research: [],     // Hintergrund-Dossiers
+  plot: [],         // Plotpunkte
 };
 
 function saveState() { localStorage.setItem('buch_state', JSON.stringify(S)); }
@@ -20843,6 +20937,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const elKey = localStorage.getItem('el_apikey');
   if (elKey) { document.getElementById('el-api-key').value = elKey; setElStatus(true); }
   loadState();
+  bbInit();
   restoreFormValues();
   updateStepNav();
 });
@@ -20916,16 +21011,17 @@ const stepTitles = {
 
 function goStep(step) {
   const el = document.querySelector(`.step-item[data-step="${step}"]`);
-  if (step !== 'lektorat' && el && el.classList.contains('locked')) { toast('⚠ Bitte zuerst vorherige Schritte abschließen'); return; }
+  if (step !== 'lektorat' && step !== 'bibel' && el && el.classList.contains('locked')) { toast('⚠ Bitte zuerst vorherige Schritte abschließen'); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+step).classList.add('active');
-  const titles = { ...stepTitles, audiobook: '🎧 Buch → Hörbuch-Skript', lektorat: '✏️ Lektorat' };
+  const titles = { ...stepTitles, audiobook: '🎧 Buch → Hörbuch-Skript', lektorat: '✏️ Lektorat', bibel: '📔 Roman-Bibel' };
   document.getElementById('main-title').textContent = titles[step] || step;
   document.querySelectorAll('.step-item').forEach(s => s.classList.remove('active'));
   el?.classList.add('active');
   if (step === 'preview') renderPreview();
   if (step === 'export')  renderExportStats();
   if (step === 'write')   renderChapterNav();
+  if (step === 'bibel')   bbRenderAll();
 }
 
 function updateStepNav() {
@@ -20993,6 +21089,8 @@ ${setup.topic    ? '**Inhalt/Thema:** ' + setup.topic : ''}
 **Zielgruppe:** ${setup.audience}
 **Sprache:** ${setup.lang}
 **Anzahl Kapitel:** ${setup.chapters}
+${bbPeopleContext()}
+${bbPlotContext(-1)}
 
 Erstelle genau ${setup.chapters} Kapitel. Antworte NUR als JSON-Array ohne Markdown-Backticks:
 [
@@ -21183,6 +21281,9 @@ ${tocSummary}
 
 **Aktuelles Kapitel:** Kapitel ${chIndex+1} – "${ch.title}"
 **Beschreibung:** ${ch.description}
+${bbPeopleContext()}
+${bbPlotContext(chIndex)}
+${bbResearchContext(4000)}
 
 ${prevContext ? `**Ende des vorherigen Kapitels (Kontext):**\n"…${prevContext}"` : ''}
 
@@ -21227,6 +21328,8 @@ async function continueChapter(id) {
 
 **Buch:** "${setup.title}", Typ: ${setup.type}, Stil: ${setup.tone}
 **Kapitel:** "${ch.title}"
+${bbPeopleContext()}
+${bbResearchContext(2500)}
 
 **Bisheriger Text (Ende):**
 "…${last400}"
@@ -21729,8 +21832,486 @@ function downloadFullAudiobook() {
   toast('✅ Komplettes Hörbuch-Skript heruntergeladen!');
 }
 
+/* ═══════════════════════ ROMAN-BIBEL ════════════════════════════════
+   Personenregister · Hintergrundrecherche · Plotpunkte
+   Alles landet automatisch im Schreib-Prompt jedes Kapitels.          */
+
+const PLOT_BEATS = [
+  { label:'1 · Ausgangslage',   hint:'Wer ist die Hauptfigur, wie sieht ihr normaler Alltag aus, was fehlt ihr?' },
+  { label:'2 · Auslöser',       hint:'Das Ereignis, das alles in Bewegung bringt. Die Leiche, der Anruf, der Auftrag.' },
+  { label:'3 · Plotpunkt 1',    hint:'Der Punkt ohne Rückkehr. Ab hier kann die Figur nicht mehr aussteigen.' },
+  { label:'4 · Mittelpunkt',    hint:'Die große Wendung in der Mitte. Was bisher galt, stimmt nicht mehr.' },
+  { label:'5 · Zuspitzung',     hint:'Der Gegner zieht an. Die Figur verliert Verbündete, Zeit oder Deckung.' },
+  { label:'6 · Tiefpunkt',      hint:'Alles verloren. Was ist die schlimmste Version dieser Geschichte?' },
+  { label:'7 · Plotpunkt 2',    hint:'Die Erkenntnis, die den letzten Angriff möglich macht.' },
+  { label:'8 · Finale & Ausklang', hint:'Auflösung, Preis dafür, und wie die Figur danach dasteht.' }
+];
+
+function bbTab(which) {
+  ['people','research','plot'].forEach(t => {
+    const pane = document.getElementById('bb-pane-'+t);
+    const btn  = document.getElementById('bb-tab-'+t);
+    if (pane) pane.style.display = (t===which) ? 'block' : 'none';
+    if (btn) {
+      btn.style.borderColor = t===which ? 'var(--gold-dk)' : 'var(--border2)';
+      btn.style.background  = t===which ? 'rgba(212,168,67,0.1)' : 'rgba(255,255,255,0.04)';
+      btn.style.color       = t===which ? 'var(--gold-lt)' : 'var(--muted)';
+      btn.style.fontWeight  = t===which ? '600' : '400';
+    }
+  });
+}
+
+function bbInit() {
+  if (!Array.isArray(S.people))   S.people = [];
+  if (!Array.isArray(S.research)) S.research = [];
+  if (!Array.isArray(S.plot))     S.plot = [];
+}
+
+function bbRenderAll() { bbInit(); bbRenderPeople(); bbRenderResearch(); bbRenderPlot(); }
+function bbSave() { saveState(); }
+function bbId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ── Personenregister ─────────────────────────────────────────────── */
+const PERSON_FIELDS = [
+  { k:'role',      label:'Rolle im Buch', ph:'Hauptfigur · Ermittler · Täter · Zeuge …', short:true },
+  { k:'age',       label:'Alter / Beruf',  ph:'47, Hauptkommissarin',                     short:true },
+  { k:'look',      label:'Aussehen',       ph:'Ein Merkmal reicht, das man sich merkt',   short:true },
+  { k:'character', label:'Charakter',      ph:'Wie tickt sie? Stärke und Schwäche.' },
+  { k:'speech',    label:'Sprechweise',    ph:'Kurze Sätze? Dialekt? Lieblingswort? Was sagt sie NIE?' },
+  { k:'motive',    label:'Motiv / Ziel',   ph:'Was will diese Figur, und warum ausgerechnet jetzt?' },
+  { k:'secret',    label:'Geheimnis',      ph:'Was verschweigt sie den anderen?' },
+  { k:'arc',       label:'Entwicklung',    ph:'Wie steht sie am Ende da — anders als am Anfang?' }
+];
+
+function bbAddPerson(data) {
+  bbInit();
+  S.people.push(Object.assign({ id:bbId(), name:'', role:'', age:'', look:'', character:'', speech:'', motive:'', secret:'', arc:'', open:true }, data||{}));
+  bbSave(); bbRenderPeople();
+}
+
+function bbDelPerson(id) {
+  const p = (S.people||[]).find(x=>x.id===id);
+  if (!confirm(`"${p?.name||'Diese Person'}" wirklich löschen?`)) return;
+  S.people = S.people.filter(x=>x.id!==id);
+  bbSave(); bbRenderPeople();
+}
+
+function bbSetPerson(id, key, val) {
+  const p = (S.people||[]).find(x=>x.id===id);
+  if (!p) return;
+  p[key] = val; bbSave();
+  if (key === 'name') { const h = document.getElementById('bb-pname-'+id); if (h) h.textContent = val || 'Ohne Namen'; }
+}
+
+function bbTogglePerson(id) {
+  const p = (S.people||[]).find(x=>x.id===id);
+  if (!p) return; p.open = !p.open; bbSave(); bbRenderPeople();
+}
+
+function bbRenderPeople() {
+  bbInit();
+  const box = document.getElementById('bb-people-list');
+  if (!box) return;
+  if (!S.people.length) {
+    box.innerHTML = '<div style="border:1px dashed var(--border2);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:.85rem;">Noch keine Person angelegt.</div>';
+    return;
+  }
+  box.innerHTML = S.people.map(p => `
+    <div style="border:1px solid var(--border2);border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:10px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(212,168,67,0.06);">
+        <span style="font-size:1rem;">👤</span>
+        <strong id="bb-pname-${p.id}" style="flex:1;color:var(--gold-lt);font-size:.9rem;">${escH(p.name) || 'Ohne Namen'}</strong>
+        <span style="font-size:.72rem;color:var(--muted);">${escH(p.role)}</span>
+        <button onclick="bbTogglePerson('${p.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--ink2);font-size:.72rem;cursor:pointer;">${p.open?'▲ zu':'▼ auf'}</button>
+        <button onclick="bbDelPerson('${p.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(198,80,80,0.4);background:rgba(198,80,80,0.1);color:#E08585;font-size:.72rem;cursor:pointer;">Löschen</button>
+      </div>
+      <div style="display:${p.open?'block':'none'};padding:14px 16px;">
+        <label style="display:block;font-size:.72rem;color:var(--muted);margin-bottom:3px;">Name</label>
+        <input value="${escH(p.name)}" oninput="bbSetPerson('${p.id}','name',this.value)" placeholder="Vor- und Nachname"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--ink2);font-size:.85rem;outline:none;margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+          ${PERSON_FIELDS.map(f => `
+            <div${f.short?'':' style="grid-column:1/-1;"'}>
+              <label style="display:block;font-size:.72rem;color:var(--muted);margin-bottom:3px;">${f.label}</label>
+              ${f.short
+                ? `<input value="${escH(p[f.k]||'')}" oninput="bbSetPerson('${p.id}','${f.k}',this.value)" placeholder="${escH(f.ph)}" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--ink2);font-size:.84rem;outline:none;">`
+                : `<textarea oninput="bbSetPerson('${p.id}','${f.k}',this.value)" placeholder="${escH(f.ph)}" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;color:var(--ink2);font-size:.84rem;outline:none;min-height:62px;resize:vertical;line-height:1.6;">${escH(p[f.k]||'')}</textarea>`}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* Warnt vor Namen, die sich beim Lesen verwechseln lassen */
+function bbCheckNames() {
+  bbInit();
+  const warn = document.getElementById('bb-name-warn');
+  const names = S.people.map(p => (p.name||'').trim().split(/\s+/)[0]).filter(n => n.length > 1);
+  const problems = [];
+  for (let i=0; i<names.length; i++) {
+    for (let j=i+1; j<names.length; j++) {
+      const a = names[i], b = names[j];
+      if (a.toLowerCase() === b.toLowerCase()) { problems.push(`"${a}" kommt doppelt vor.`); continue; }
+      if (a[0].toLowerCase() === b[0].toLowerCase()) problems.push(`"${a}" und "${b}" fangen beide mit ${a[0].toUpperCase()} an.`);
+      else if (a.length === b.length && a.slice(-2).toLowerCase() === b.slice(-2).toLowerCase()) problems.push(`"${a}" und "${b}" klingen am Ende gleich.`);
+    }
+  }
+  if (!names.length) { warn.style.display='none'; toast('⚠ Noch keine Namen eingetragen'); return; }
+  if (!problems.length) { warn.style.display='none'; toast('✅ Namen sind gut unterscheidbar'); return; }
+  warn.style.display = 'block';
+  warn.innerHTML = '<strong>Verwechslungsgefahr beim Lesen:</strong><br>' + [...new Set(problems)].join('<br>');
+}
+
+async function bbSuggestPeople() {
+  bbInit();
+  const setup = getSetup();
+  if (!setup.title && !setup.topic) { toast('⚠ Erst das Buchsetup ausfüllen'); return; }
+  const known = S.people.filter(p=>p.name).map(p=>`${p.name} (${p.role||'Rolle offen'})`).join(', ');
+  const prompt = `Du bist ein erfahrener Romanautor und entwickelst die Besetzung für ein Buch.
+
+Buch: "${setup.title}"${setup.subtitle?' – '+setup.subtitle:''}
+Typ: ${setup.type} · Genre: ${setup.genre}
+Worum es geht: ${setup.topic}
+Stil: ${setup.tone} · Sprache: ${setup.lang}
+${known ? `\nDiese Figuren gibt es schon, erfinde sie NICHT neu: ${known}` : ''}
+
+Entwirf ${known ? '4' : '6'} Figuren, die diese Geschichte trägt: Hauptfigur, Gegenspieler und die wichtigsten Nebenfiguren.
+
+Wichtig:
+- Die Vornamen müssen sich klar unterscheiden — nicht zwei mit demselben Anfangsbuchstaben, nicht zwei mit gleichem Klang.
+- "speech" ist das Wichtigste: woran erkennt man diese Figur im Dialog, ohne dass ihr Name dabeisteht? Satzlänge, Wortwahl, Dialekt, ein Tick, ein Wort das sie nie benutzt.
+- Keine Klischees ("hartgesottener Ermittler mit Alkoholproblem"). Gib jeder Figur einen Widerspruch in sich.
+- Namen müssen zum Schauplatz und zur Zeit passen.
+
+Antworte NUR mit einem JSON-Array, ohne Einleitung, ohne Code-Fence:
+[{"name":"","role":"","age":"","look":"","character":"","speech":"","motive":"","secret":"","arc":""}]`;
+
+  showLoader('Besetzung wird entworfen …', 'Einen Moment bitte');
+  try {
+    const raw = await callClaude(prompt, 6000);
+    const m = raw.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('Antwort nicht lesbar');
+    JSON.parse(m[0]).forEach(p => bbAddPerson({ ...p, open:false }));
+    toast('✅ Besetzung ergänzt');
+  } catch(e) { toast('❌ ' + e.message); }
+  finally { hideLoader(); }
+}
+
+/* ── Hintergrundrecherche ─────────────────────────────────────────── */
+function bbDelResearch(id) {
+  const r = (S.research||[]).find(x=>x.id===id);
+  if (!confirm(`Dossier "${r?.topic||''}" wirklich löschen?`)) return;
+  S.research = S.research.filter(x=>x.id!==id);
+  bbSave(); bbRenderResearch();
+}
+function bbSetResearch(id, val) {
+  const r = (S.research||[]).find(x=>x.id===id);
+  if (r) { r.content = val; bbSave(); }
+}
+function bbToggleResearch(id) {
+  const r = (S.research||[]).find(x=>x.id===id);
+  if (r) { r.open = !r.open; bbSave(); bbRenderResearch(); }
+}
+
+function bbRenderResearch() {
+  bbInit();
+  const box = document.getElementById('bb-research-list');
+  if (!box) return;
+  if (!S.research.length) {
+    box.innerHTML = '<div style="border:1px dashed var(--border2);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:.85rem;">Noch kein Dossier angelegt.</div>';
+    return;
+  }
+  box.innerHTML = S.research.map(r => `
+    <div style="border:1px solid var(--border2);border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:10px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(83,74,183,0.08);">
+        <span>📑</span>
+        <strong style="flex:1;color:#AFA9EC;font-size:.88rem;">${escH(r.topic)}</strong>
+        <span style="font-size:.7rem;color:var(--muted);">${(r.content||'').split(/\s+/).length.toLocaleString('de-DE')} Wörter</span>
+        <button onclick="bbToggleResearch('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--ink2);font-size:.72rem;cursor:pointer;">${r.open?'▲ zu':'▼ auf'}</button>
+        <button onclick="bbDelResearch('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(198,80,80,0.4);background:rgba(198,80,80,0.1);color:#E08585;font-size:.72rem;cursor:pointer;">Löschen</button>
+      </div>
+      <div style="display:${r.open?'block':'none'};padding:14px 16px;">
+        <textarea oninput="bbSetResearch('${r.id}',this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;color:var(--ink2);font-size:.84rem;outline:none;min-height:280px;resize:vertical;line-height:1.75;">${escH(r.content||'')}</textarea>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:6px;">Du kannst hier alles überschreiben — eigene Notizen, Zeitungsausschnitte, was du selbst nachgeschlagen hast.</div>
+      </div>
+    </div>`).join('');
+}
+
+async function bbResearch() {
+  bbInit();
+  const topic = document.getElementById('bb-research-topic').value.trim();
+  if (!topic) { toast('⚠ Bitte ein Thema eingeben'); return; }
+  const depth = document.getElementById('bb-research-depth').value;
+  const setup = getSetup();
+  const umfang = { kurz:'ca. 400 Wörter, nur das Wichtigste', mittel:'ca. 900 Wörter, ein brauchbares Arbeitsdossier', tief:'ca. 1800 Wörter, so ausführlich wie möglich' }[depth];
+
+  const prompt = `Du bist Fachberater für Romanautoren und recherchierst für ein Buch.
+
+Buch: "${setup.title||'(ohne Titel)'}" · ${setup.type} · ${setup.genre}
+Schauplatz/Zeit laut Autorin: ${setup.topic || 'nicht angegeben'}
+Thema der Recherche: ${topic}
+Umfang: ${umfang}
+
+Gliedere so:
+
+ABLAUF IN DER PRAXIS
+Wie läuft das Schritt für Schritt wirklich ab? Wer macht was, in welcher Reihenfolge, wie lange dauert es?
+
+WER DARF WAS
+Zuständigkeiten, Hierarchien, Dienstwege. Was darf die Figur an dieser Stelle nicht tun, ohne sich strafbar zu machen oder Ärger zu bekommen?
+
+FACHBEGRIFFE
+Die Wörter, die Leute vom Fach benutzen — mit kurzer Erklärung. Auch der Jargon, den Außenstehende nicht kennen.
+
+SINNLICHE DETAILS
+Was sieht, hört, riecht man dort? Die kleinen Dinge, die man nur weiß, wenn man dabei war. Genau das macht eine Szene glaubwürdig.
+
+TYPISCHE AUTORENFEHLER
+Woran merken Fachleute sofort, dass jemand nicht recherchiert hat? Nenne konkret, was in Romanen und Filmen falsch dargestellt wird und wie es richtig ist.
+
+SZENEN-IDEEN
+3 Situationen aus diesem Milieu, die dramatisch etwas hergeben.
+
+UNSICHER
+Was hiervon solltest du gegenprüfen — Punkte, wo Regionen, Behörden oder Jahre sich unterscheiden. Sei hier ehrlich; erfinde niemals Paragrafen, Namen oder Jahreszahlen, sondern schreib "nachschlagen" dazu.
+
+Schreib in klarem Deutsch, ohne Einleitung, ohne Schlusswort.`;
+
+  showLoader(`Recherche: "${topic}" …`, 'Das dauert einen Moment');
+  try {
+    const content = await callClaude(prompt, depth==='tief' ? 12000 : 8000);
+    S.research.unshift({ id:bbId(), topic, content, open:true });
+    bbSave(); bbRenderResearch();
+    document.getElementById('bb-research-topic').value = '';
+    toast('✅ Dossier angelegt');
+  } catch(e) { toast('❌ ' + e.message); }
+  finally { hideLoader(); }
+}
+
+/* ── Plotpunkte ───────────────────────────────────────────────────── */
+function bbPlotSkeleton() {
+  bbInit();
+  if (S.plot.length && !confirm('Es gibt schon Plotpunkte. Gerüst trotzdem neu anlegen? Der bisherige Inhalt geht dabei verloren.')) return;
+  S.plot = PLOT_BEATS.map(b => ({ id:bbId(), label:b.label, hint:b.hint, text:'', chapter:'' }));
+  bbSave(); bbRenderPlot();
+  toast('✅ Gerüst angelegt');
+}
+function bbSetPlot(id, key, val) {
+  const p = (S.plot||[]).find(x=>x.id===id);
+  if (p) { p[key] = val; bbSave(); }
+}
+
+function bbRenderPlot() {
+  bbInit();
+  const box = document.getElementById('bb-plot-list');
+  if (!box) return;
+  if (!S.plot.length) {
+    box.innerHTML = '<div style="border:1px dashed var(--border2);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:.85rem;">Noch kein Plot angelegt — klick auf „Plot-Gerüst anlegen".</div>';
+    return;
+  }
+  box.innerHTML = S.plot.map(p => `
+    <div style="border:1px solid var(--border2);border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:10px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+        <strong style="flex:1;color:var(--gold-lt);font-size:.88rem;">${escH(p.label)}</strong>
+        <input value="${escH(p.chapter||'')}" oninput="bbSetPlot('${p.id}','chapter',this.value)" placeholder="Kapitel?"
+          style="width:110px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:5px 9px;color:var(--ink2);font-size:.75rem;outline:none;">
+      </div>
+      <div style="font-size:.74rem;color:var(--muted);margin-bottom:8px;line-height:1.5;">${escH(p.hint||'')}</div>
+      <textarea oninput="bbSetPlot('${p.id}','text',this.value)" placeholder="Was passiert hier?"
+        style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:10px 13px;color:var(--ink2);font-size:.85rem;outline:none;min-height:76px;resize:vertical;line-height:1.65;">${escH(p.text||'')}</textarea>
+    </div>`).join('');
+}
+
+async function bbSuggestPlot() {
+  bbInit();
+  if (!S.plot.length) bbPlotSkeleton();
+  const setup = getSetup();
+  if (!setup.topic && !setup.title) { toast('⚠ Erst das Buchsetup ausfüllen'); return; }
+  const cast = S.people.filter(p=>p.name).map(p=>`${p.name} — ${p.role||'?'}: ${p.motive||''}`).join('\n') || '(noch keine Figuren angelegt)';
+
+  const prompt = `Du bist ein erfahrener Romanautor und entwirfst den Spannungsbogen.
+
+Buch: "${setup.title}"${setup.subtitle?' – '+setup.subtitle:''}
+Typ: ${setup.type} · Genre: ${setup.genre} · Stil: ${setup.tone}
+Worum es geht: ${setup.topic}
+Geplant: ${setup.chapters} Kapitel
+
+Figuren:
+${cast}
+
+Fülle diese acht Plotpunkte:
+${PLOT_BEATS.map((b,i)=>`${i+1}. ${b.label} — ${b.hint}`).join('\n')}
+
+Regeln:
+- Konkret werden. Nicht "die Spannung steigt", sondern was genau passiert, wer es tut und was es kostet.
+- Jeder Punkt 2 bis 4 Sätze.
+- Bei "chapter" schätzt du, in welchem Kapitel von ${setup.chapters} das liegt (nur die Zahl).
+- Der Tiefpunkt muss wirklich wehtun.
+- Keine Lösung durch Zufall — was am Ende hilft, muss vorher aufgetaucht sein.
+
+Antworte NUR mit einem JSON-Array in dieser Reihenfolge, ohne Einleitung, ohne Code-Fence:
+[{"text":"","chapter":""}]`;
+
+  showLoader('Plot wird entworfen …', 'Einen Moment bitte');
+  try {
+    const raw = await callClaude(prompt, 6000);
+    const m = raw.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('Antwort nicht lesbar');
+    const arr = JSON.parse(m[0]);
+    S.plot.forEach((p,i) => { if (arr[i]) { p.text = arr[i].text || p.text; p.chapter = arr[i].chapter || p.chapter; } });
+    bbSave(); bbRenderPlot();
+    toast('✅ Plot gefüllt — jetzt umschreiben, bis es deins ist');
+  } catch(e) { toast('❌ ' + e.message); }
+  finally { hideLoader(); }
+}
+
+function bbPlotToToc() {
+  bbInit();
+  const filled = S.plot.filter(p => (p.text||'').trim());
+  if (!filled.length) { toast('⚠ Plot ist noch leer'); return; }
+  if (S.toc.length && !confirm('Das bestehende Inhaltsverzeichnis wird durch die Plotpunkte ersetzt. Fortfahren?')) return;
+  S.toc = filled.map((p,i) => ({ id:i+1, title:p.label.replace(/^\d+\s·\s/,''), description:p.text }));
+  S.steps.toc = true;
+  saveState(); updateStepNav();
+  if (typeof renderTOC === 'function') renderTOC();
+  toast('✅ Ins Inhaltsverzeichnis übernommen');
+  goStep('toc');
+}
+
+/* ── Kontext für die Schreib-Prompts ──────────────────────────────── */
+function bbPeopleContext() {
+  bbInit();
+  const ps = S.people.filter(p => (p.name||'').trim());
+  if (!ps.length) return '';
+  return `\n**Personenregister — halte dich strikt daran:**\n` + ps.map(p =>
+    `• ${p.name}${p.role?` (${p.role})`:''}${p.age?`, ${p.age}`:''}` +
+    (p.look       ? `\n  Aussehen: ${p.look}` : '') +
+    (p.character  ? `\n  Charakter: ${p.character}` : '') +
+    (p.speech     ? `\n  Spricht so: ${p.speech}` : '') +
+    (p.motive     ? `\n  Will: ${p.motive}` : '') +
+    (p.secret     ? `\n  Verschweigt: ${p.secret}` : '') +
+    (p.arc        ? `\n  Entwicklung: ${p.arc}` : '')
+  ).join('\n') +
+  `\n\nJede Figur muss an ihrer Sprechweise erkennbar sein, auch ohne dass ihr Name danebensteht. Zwei Figuren dürfen nicht gleich klingen. Erfinde keine neuen Hauptfiguren dazu.`;
+}
+
+function bbPlotContext(chIndex) {
+  bbInit();
+  const filled = S.plot.filter(p => (p.text||'').trim());
+  if (!filled.length) return '';
+  const nr = chIndex + 1;
+  const here = filled.filter(p => parseInt(p.chapter) === nr);
+  return `\n**Spannungsbogen des Buches:**\n` +
+    filled.map(p => `• ${p.label}${p.chapter?` (Kapitel ${p.chapter})`:''}: ${p.text}`).join('\n') +
+    (here.length ? `\n\nIn DIESEM Kapitel (${nr}) liegt: ${here.map(p=>p.label).join(', ')}. Dieser Punkt muss hier tatsächlich stattfinden.` : '');
+}
+
+function bbResearchContext(limit) {
+  bbInit();
+  if (!S.research.length) return '';
+  const max = limit || 4000;
+  let out = '', used = 0;
+  for (const r of S.research) {
+    const body = (r.content||'').slice(0, Math.max(600, max - used));
+    if (used + body.length > max) break;
+    out += `\n### ${r.topic}\n${body}\n`;
+    used += body.length;
+  }
+  if (!out) return '';
+  return `\n**Recherche — nutze diese Fachdetails, statt sie zu erfinden:**${out}\nBaue davon nur ein, was die Szene wirklich braucht. Kein Fachvortrag, keine Erklärstellen — das Wissen zeigt sich darin, wie die Figuren handeln und reden.`;
+}
+
 /* ═══════════════════════════ LEKTORAT ═══════════════════════════════ */
 let LK = { mode: 'mittel', chapters: [], accepted: [], currentIndex: -1 };
+
+/* ── Floskel-Kontingent ──────────────────────────────────────────────
+   quota = erlaubte Treffer pro 50.000 Wörter. Alles darüber muss weg.  */
+const FLOSKELN = [
+  { label:'starrte auf / starrte an',      quota:3, re:/\bstarrt[e]?n?\b/gi },
+  { label:'spürte, wie …',                 quota:2, re:/\bspürte[n]?,?\s+wie\b/gi },
+  { label:'Puls',                          quota:3, re:/\bPuls\w*/gi },
+  { label:'Herz hämmerte / raste / pochte',quota:2, re:/\bHerz\w*\s+(?:hämmert|rast|pocht|klopft|schlug|stolpert)\w*/gi },
+  { label:'atmete tief / tief durch',      quota:3, re:/\b(?:atmete\s+tief|tief\s+durch(?:at|ge)\w*|holte\s+tief\s+Luft)\b/gi },
+  { label:'nicht nur … sondern auch',      quota:2, re:/\bnicht\s+nur\b/gi },
+  { label:'Magen zog sich zusammen',       quota:2, re:/\bMagen\w*\s+(?:zog|krampft|verkrampft|zusammen)\w*/gi },
+  { label:'Kloß im Hals',                  quota:1, re:/\bKloß\s+im\s+Hals\b/gi },
+  { label:'Schauer über den Rücken',       quota:1, re:/\b(?:Schauer|Frösteln)\b[^.!?]{0,30}\bRücken\b/gi },
+  { label:'Nackenhaare',                   quota:1, re:/\bNackenhaar\w*/gi },
+  { label:'Hände zitterten',               quota:2, re:/\b(?:Hände|Finger)\s+zitter\w*/gi },
+  { label:'Blut rauschte / gefror',        quota:1, re:/\bBlut\s+(?:rauscht|gefror|erstarrt|gefrier)\w*/gi },
+  { label:'Schweiß / Schweißperlen',       quota:2, re:/\bSchweiß\w*/gi },
+  { label:'schluckte (schwer)',            quota:3, re:/\bschluckt[e]?n?\b/gi },
+  { label:'Adrenalin',                     quota:2, re:/\bAdrenalin\w*/gi },
+  { label:'runzelte die Stirn',            quota:2, re:/\b(?:runzelt|Stirnrunzeln)\w*/gi },
+  { label:'zog die Augenbrauen hoch',      quota:2, re:/\bAugenbraue\w*/gi },
+  { label:'Zeit schien stillzustehen',     quota:1, re:/\b(?:Zeit|Welt|Raum)\s+schien\b/gi },
+  { label:'Sekundenbruchteil',             quota:1, re:/\bSekundenbruchteil\w*/gi },
+  { label:'eine Mischung aus … und',       quota:2, re:/\beine\s+Mischung\s+aus\b/gi },
+  { label:'Stille / Schweigen legte sich', quota:1, re:/\b(?:Stille|Schweigen)\s+(?:legte|breitete|senkte)\w*/gi },
+  { label:'wie aus dem Nichts',            quota:1, re:/\bwie\s+aus\s+dem\s+Nichts\b/gi },
+  { label:'konnte nicht anders als',       quota:0, re:/\bkonnte\s+nicht\s+anders,?\s+als\b/gi },
+  { label:'KI-Floskeln (Es ist wichtig …)',quota:0, re:/\b(?:Es\s+ist\s+wichtig|In\s+diesem\s+Zusammenhang|Zusammenfassend|Letztendlich|Nicht\s+zuletzt|Es\s+sei\s+angemerkt)\b/gi }
+];
+
+function lkCount(text, f) { return (String(text).match(f.re) || []).length; }
+
+function lkFullText() {
+  if (LK.chapters.length) return LK.chapters.map(c => c.content).join('\n\n');
+  return document.getElementById('lk-text').value || '';
+}
+
+/* Kontingent skaliert mit der Buchlänge */
+function lkQuotaFor(f, totalWords) {
+  const scale = Math.max(1, Math.round(totalWords / 50000));
+  return f.quota * scale;
+}
+
+function lkScanFloskeln(showToast) {
+  const text = lkFullText().trim();
+  if (!text) { toast('⚠ Erst Text laden'); return null; }
+  const totalWords = text.split(/\s+/).filter(w => w).length;
+  const rows = FLOSKELN.map(f => {
+    const n = lkCount(text, f);
+    return { label: f.label, count: n, quota: lkQuotaFor(f, totalWords) };
+  }).filter(r => r.count > 0).sort((a, b) => (b.count - b.quota) - (a.count - a.quota));
+
+  const area = document.getElementById('lk-floskel-area');
+  const list = document.getElementById('lk-floskel-list');
+  const sum  = document.getElementById('lk-floskel-sum');
+  const over = rows.reduce((s, r) => s + Math.max(0, r.count - r.quota), 0);
+  area.style.display = 'block';
+  sum.textContent = `${totalWords.toLocaleString('de-DE')} Wörter · ${over.toLocaleString('de-DE')} Stellen über dem Kontingent`;
+  list.innerHTML = rows.length ? rows.map(r => {
+    const bad = r.count > r.quota;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:6px;background:${bad?'rgba(198,80,80,0.10)':'rgba(29,158,117,0.08)'};margin-bottom:4px;">
+      <span style="flex:1;font-size:.82rem;color:var(--ink2);">${r.label}</span>
+      <span style="font-size:.78rem;font-weight:700;color:${bad?'#E08585':'#1D9E75'};">${r.count}×</span>
+      <span style="font-size:.72rem;color:var(--muted);min-width:78px;text-align:right;">erlaubt: ${r.quota}</span>
+    </div>`;
+  }).join('') : '<div style="font-size:.82rem;color:#1D9E75;">Keine der bekannten Floskeln gefunden.</div>';
+
+  LK.floskelTotalWords = totalWords;
+  if (showToast) toast(over ? `🔍 ${over} Stellen über dem Kontingent` : '✅ Alles im Rahmen');
+  return rows;
+}
+
+/* Anweisung für EIN Kapitel: wie viele Treffer es behalten darf */
+function lkFloskelInstr(chapterText) {
+  const all = lkFullText();
+  const totalWords = all.split(/\s+/).filter(w => w).length;
+  const lines = [];
+  FLOSKELN.forEach(f => {
+    const nCh = lkCount(chapterText, f);
+    if (!nCh) return;
+    const nBook = lkCount(all, f) || nCh;
+    const bookQuota = lkQuotaFor(f, totalWords);
+    const chQuota = Math.floor(bookQuota * nCh / nBook);
+    if (nCh > chQuota) {
+      lines.push(`- "${f.label}": ${nCh}× in diesem Kapitel (im ganzen Buch ${nBook}×). Behalte höchstens ${chQuota}. Die anderen ${nCh - chQuota} müssen weg.`);
+    }
+  });
+  return lines;
+}
 
 function setLkMode(mode, btn) {
   LK.mode = mode;
@@ -21799,6 +22380,7 @@ function lkFromBook() {
   document.getElementById('lk-text').value = chs.map(ch=>`## ${ch.title}\n\n${ch.content}`).join('\n\n---\n\n');
   lkUpdateStats();
   lkRenderChapterList();
+  lkScanFloskeln(false);
   toast(`✅ ${chs.length} Kapitel geladen`);
 }
 
@@ -21833,6 +22415,7 @@ function lkAnalyze() {
   }
   LK.accepted = [];
   lkRenderChapterList();
+  lkScanFloskeln(false);
   toast(`✅ ${LK.chapters.length} Kapitel erkannt`);
 }
 
@@ -21857,18 +22440,32 @@ async function lkDoChapter(index) {
   const ch = LK.chapters[index];
   const modeInstr = {
     leicht: 'Korrigiere nur Rechtschreib- und Zeichensetzungsfehler. Verändere sonst nichts.',
-    mittel: 'Korrigiere Rechtschreibung, Grammatik und Zeichensetzung. Ersetze Füllwörter durch buchreife Formulierungen — niemals streichen, sondern ersetzen. Textlänge bleibt gleich.',
-    intensiv: 'Vollständiges Lektorat. Füllwörter durch buchreife Formulierungen ersetzen. Stil verfeinern. Textlänge bleibt gleich oder wird leicht länger — niemals kürzen.'
+    mittel: 'Korrigiere Rechtschreibung, Grammatik und Zeichensetzung. Ersetze oder streiche Füllwörter (eigentlich, wirklich, sehr, dann, auch, halt, eben, mal, sozusagen). Halte das Floskel-Kontingent unten ein.',
+    intensiv: 'Vollständiges Lektorat. Füllwörter raus, Satzanfänge variieren, Wortwiederholungen auflösen, Stil verfeinern. Halte das Floskel-Kontingent unten strikt ein.'
   };
-  const system = `Du bist ein erfahrener deutschsprachiger Lektor.
+  const flLines = lkFloskelInstr(ch.content);
+  const flBlock = flLines.length ? `
+
+FLOSKEL-KONTINGENT — das ist die wichtigste Aufgabe:
+${flLines.join('\n')}
+
+So gehst du damit um:
+- Erste Wahl ist STREICHEN. Meistens trägt die Handlung die Spannung schon allein, und der Satz wird ohne die Körperreaktion stärker.
+- Zweite Wahl: durch etwas Konkretes ersetzen, das NUR in diese eine Szene passt (was die Figur hier gerade sieht, hört, riecht, tut).
+- Verboten: eine Standardformel gegen die nächste tauschen. Aus "Herz hämmerte" darf nicht überall "Herz pochte" werden — das klingt genauso maschinell.
+- Beim Streichen einer Körperreaktion DARF der Satz kürzer werden. Hier ist Kürzen ausdrücklich erwünscht.
+- Zwei Figuren dürfen nicht auf dieselbe Art reagieren.` : '';
+
+  const system = `Du bist ein erfahrener deutschsprachiger Lektor und Romanautor.
+
 AUFGABE: ${modeInstr[LK.mode]}
+
 REGELN:
-1. Gib NUR den lektorierten Text zurück — keine Erklärungen
-2. Textlänge bleibt GLEICH oder wird leicht länger — niemals kürzen
-3. Alle Absätze, Dialoge und Zeilenumbrüche bleiben erhalten
-4. Text soll nach einem Menschen klingen, nicht nach KI
-5. Keine KI-Floskeln: "Es ist wichtig", "In diesem Zusammenhang", "Zusammenfassend"
-6. Füllwörter ERSETZEN: eigentlich, wirklich, sehr, dann, auch, halt, eben, mal, sozusagen`;
+1. Gib NUR den lektorierten Text zurück — keine Erklärungen, keine Kommentare
+2. Alle Absätze, Dialoge und Zeilenumbrüche bleiben erhalten
+3. Handlung, Figuren, Namen und Fakten bleiben unverändert
+4. Der Text muss nach einem Menschen klingen, nicht nach KI
+5. Die Gesamtlänge darf um bis zu 10 % schrumpfen, mehr nicht — nur dort kürzen, wo Floskeln wegfallen${flBlock}`;
 
   document.getElementById('lk-output-area').style.display = 'none';
   showLoader(`Lektoriere: "${ch.title}" …`, `Modus: ${LK.mode}`);
@@ -21883,8 +22480,10 @@ REGELN:
     const result = data.content?.[0]?.text || ch.content;
     LK.chapters[index].lektorated = result;
     const wB = ch.content.split(/\s+/).length, wA = result.split(/\s+/).length;
+    let flB = 0, flA = 0;
+    FLOSKELN.forEach(f => { flB += lkCount(ch.content, f); flA += lkCount(result, f); });
     document.getElementById('lk-chapter-title').textContent = ch.title;
-    document.getElementById('lk-word-diff').textContent = `Vorher: ${wB.toLocaleString('de-DE')} → Nachher: ${wA.toLocaleString('de-DE')} (${wA-wB>=0?'+':''}${wA-wB})`;
+    document.getElementById('lk-word-diff').textContent = `Wörter: ${wB.toLocaleString('de-DE')} → ${wA.toLocaleString('de-DE')} (${wA-wB>=0?'+':''}${wA-wB}) · Floskeln: ${flB} → ${flA}`;
     document.getElementById('lk-output').textContent = result;
     document.getElementById('lk-output-area').style.display = 'block';
   } catch(e) { hideLoader(); toast('❌ Fehler: '+e.message); }
@@ -21895,7 +22494,7 @@ function lkAccept() {
   const ch = LK.chapters[LK.currentIndex];
   ch.accepted = true; ch.content = ch.lektorated || ch.content;
   LK.accepted = LK.chapters.filter(c=>c.accepted);
-  lkRenderChapterList(); lkRenderAccepted();
+  lkRenderChapterList(); lkRenderAccepted(); lkScanFloskeln(false);
   document.getElementById('lk-output-area').style.display = 'none';
   toast('✅ Kapitel freigegeben');
   const next = LK.chapters.findIndex((c,i)=>!c.accepted && i>LK.currentIndex);

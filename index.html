@@ -20832,6 +20832,14 @@ select option{background:var(--card2)}
         ✨ Word-Datei hochladen oder aktuelles Buch direkt laden. Füllwörter werden ersetzt, überstrapazierte Floskeln bekommen ein Kontingent fürs ganze Buch — was darüber liegt, fliegt raus.
       </div>
 
+      <!-- Arbeitsweise -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:.78rem;color:var(--muted);margin-right:4px;">Arbeitsweise:</span>
+        <button id="lk-work-kommentar" onclick="setLkWork('kommentar')" style="padding:8px 16px;border-radius:99px;border:1px solid #1D9E75;background:rgba(29,158,117,0.12);color:#1D9E75;font-size:.8rem;cursor:pointer;font-weight:600;">💬 Vorschläge zum Abnicken ✓</button>
+        <button id="lk-work-direkt" onclick="setLkWork('direkt')" style="padding:8px 16px;border-radius:99px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--muted);font-size:.8rem;cursor:pointer;">✏️ Direkt ändern</button>
+      </div>
+      <div id="lk-work-hint" style="font-size:.75rem;color:var(--muted);margin-bottom:18px;line-height:1.6;">Du bekommst jede Änderung einzeln vorgelegt, mit Begründung, und entscheidest selbst. Nichts wird ohne dein Ja übernommen.</div>
+
       <!-- Modus -->
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
         <button id="lk-mode-leicht" onclick="setLkMode('leicht',this)" style="padding:8px 16px;border-radius:99px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--muted);font-size:.8rem;cursor:pointer;">L Leicht</button>
@@ -20855,6 +20863,25 @@ select option{background:var(--card2)}
         <button class="btn btn-gold" onclick="lkAnalyze()">Text analysieren →</button>
         <button class="btn btn-outline btn-sm" onclick="lkFromBook()">📚 Aktuelles Buch laden</button>
         <button class="btn btn-outline btn-sm" onclick="lkScanFloskeln(true)">🔍 Floskeln zählen</button>
+        <button class="btn btn-outline btn-sm" onclick="lkAnalyzeBook()">📖 Ganzes Buch lesen</button>
+      </div>
+
+      <!-- Buch-Profil (Kontexterfassung) -->
+      <div id="lk-profile-area" style="display:none;margin-bottom:20px;border:1px solid rgba(29,158,117,0.4);border-radius:10px;padding:16px 18px;background:rgba(29,158,117,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <strong style="color:#1D9E75;font-size:.9rem;">📖 Buch-Profil</strong>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="lk-profile-date" style="font-size:.72rem;color:var(--muted);"></span>
+            <button onclick="lkToggleProfile()" id="lk-profile-toggle" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--ink2);font-size:.72rem;cursor:pointer;">▲ zu</button>
+            <button onclick="lkDeleteProfile()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(198,80,80,0.4);background:rgba(198,80,80,0.1);color:#E08585;font-size:.72rem;cursor:pointer;">Löschen</button>
+          </div>
+        </div>
+        <div id="lk-profile-body">
+          <textarea id="lk-profile-text" oninput="lkSaveProfileText(this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;color:var(--ink2);font-size:.84rem;outline:none;min-height:340px;resize:vertical;line-height:1.75;"></textarea>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:8px;line-height:1.6;">
+            Du kannst hier alles überschreiben. Was in Stimme &amp; Stil, Figuren und Schreibweisen steht, geht ab jetzt bei jedem Kapitel automatisch mit in den Auftrag — damit das Lektorat das ganze Buch kennt und nicht nur das eine Kapitel.
+          </div>
+        </div>
       </div>
 
       <!-- Floskel-Report -->
@@ -20868,6 +20895,9 @@ select option{background:var(--card2)}
           Das Kontingent gilt fürs ganze Buch und wächst mit der Textlänge. Beim Lektorieren bekommt jedes Kapitel seinen Anteil — alles darüber wird gestrichen oder durch etwas Szenen-Eigenes ersetzt.
         </div>
       </div>
+
+      <!-- Längenwächter -->
+      <div id="lk-length-bar" style="display:none;margin-bottom:16px;border:1px solid var(--border2);border-radius:10px;padding:12px 16px;background:rgba(255,255,255,0.02);font-size:.82rem;color:var(--ink2);"></div>
 
       <!-- Kapitel Liste -->
       <div id="lk-chapter-list" style="display:none;margin-bottom:16px;"></div>
@@ -20883,6 +20913,30 @@ select option{background:var(--card2)}
           <button class="btn btn-gold" onclick="lkAccept()">✓ Übernehmen</button>
           <button class="btn btn-outline btn-sm" onclick="lkRedo()">↺ Nochmal</button>
           <button class="btn btn-outline btn-sm" onclick="lkNext()">→ Nächstes Kapitel</button>
+        </div>
+      </div>
+
+      <!-- Vorschläge (Kommentar-Modus) -->
+      <div id="lk-comment-area" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <strong style="color:var(--gold-lt);font-size:.95rem;" id="lk-comment-title">Vorschläge</strong>
+          <span id="lk-comment-count" style="font-size:.78rem;color:var(--muted);"></span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+          <select id="lk-comment-filter" onchange="lkRenderComments()" style="background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:7px 11px;color:var(--ink2);font-size:.78rem;outline:none;">
+            <option value="offen">Nur offene zeigen</option>
+            <option value="alle">Alle zeigen</option>
+            <option value="ja">Nur angenommene</option>
+            <option value="nein">Nur abgelehnte</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="lkAllSuggestions('ja')">Alle annehmen</button>
+          <button class="btn btn-outline btn-sm" onclick="lkAllSuggestions('nein')">Alle ablehnen</button>
+        </div>
+        <div id="lk-comment-list"></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-gold" onclick="lkApplyComments()">✓ Kapitel abschließen</button>
+          <button class="btn btn-outline btn-sm" onclick="lkRunChapter(LK.currentIndex)">↺ Nochmal prüfen</button>
+          <span id="lk-comment-summary" style="font-size:.78rem;color:var(--muted);"></span>
         </div>
       </div>
 
@@ -20919,6 +20973,7 @@ const S = {
   toc: [],          // [{id,title,description}]
   chapters: {},     // {id: text}
   currentChapter: null,
+  bookProfile: null, // Kontexterfassung: Profil des ganzen Manuskripts
   people: [],       // Personenregister
   research: [],     // Hintergrund-Dossiers
   plot: [],         // Plotpunkte
@@ -21022,6 +21077,7 @@ function goStep(step) {
   if (step === 'export')  renderExportStats();
   if (step === 'write')   renderChapterNav();
   if (step === 'bibel')   bbRenderAll();
+  if (step === 'lektorat') lkRenderProfile();
 }
 
 function updateStepNav() {
@@ -22222,7 +22278,7 @@ function bbResearchContext(limit) {
 }
 
 /* ═══════════════════════════ LEKTORAT ═══════════════════════════════ */
-let LK = { mode: 'mittel', chapters: [], accepted: [], currentIndex: -1 };
+let LK = { mode: 'mittel', workMode: 'kommentar', chapters: [], accepted: [], currentIndex: -1 };
 
 /* ── Floskel-Kontingent ──────────────────────────────────────────────
    quota = erlaubte Treffer pro 50.000 Wörter. Alles darüber muss weg.  */
@@ -22295,6 +22351,201 @@ function lkScanFloskeln(showToast) {
   return rows;
 }
 
+/* ── Kontexterfassung: einmal das ganze Buch lesen ─────────────────
+   Ergebnis ist ein Buch-Profil, das danach in JEDEN Kapitel-Auftrag
+   mitgeht — damit das Lektorat nicht nur ein Kapitel sieht.        */
+
+function lkProfileGet() { return (S.bookProfile && S.bookProfile.text) ? S.bookProfile : null; }
+
+function lkSaveProfileText(val) {
+  if (!S.bookProfile) S.bookProfile = {};
+  S.bookProfile.text = val;
+  saveState();
+}
+
+function lkToggleProfile() {
+  const body = document.getElementById('lk-profile-body');
+  const btn  = document.getElementById('lk-profile-toggle');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '▼ auf' : '▲ zu';
+}
+
+function lkDeleteProfile() {
+  if (!confirm('Buch-Profil wirklich löschen? Das Lektorat kennt dann wieder nur das einzelne Kapitel.')) return;
+  S.bookProfile = null; saveState();
+  document.getElementById('lk-profile-area').style.display = 'none';
+  toast('Profil gelöscht');
+}
+
+function lkRenderProfile() {
+  const p = lkProfileGet();
+  const area = document.getElementById('lk-profile-area');
+  if (!area) return;
+  if (!p) { area.style.display = 'none'; return; }
+  area.style.display = 'block';
+  document.getElementById('lk-profile-text').value = p.text || '';
+  document.getElementById('lk-profile-date').textContent =
+    (p.words ? p.words.toLocaleString('de-DE') + ' Wörter · ' : '') +
+    (p.parts > 1 ? `${p.parts} Etappen · ` : '') + (p.date || '');
+}
+
+/* Wie viele Wörter darf eine Etappe haben, damit sie in einen Aufruf passt */
+const LK_BLOCK_WORDS = 55000;
+
+/* Teilt das Buch an Kapitelgrenzen in Etappen */
+function lkSplitBlocks() {
+  const blocks = [];
+  let cur = [], curWords = 0;
+  LK.chapters.forEach((c,i) => {
+    const w = lkWords(c.content);
+    if (curWords && curWords + w > LK_BLOCK_WORDS) { blocks.push(cur); cur = []; curWords = 0; }
+    cur.push({ nr:i+1, title:c.title, content:c.content });
+    curWords += w;
+  });
+  if (cur.length) blocks.push(cur);
+  return blocks;
+}
+
+function lkBlockText(block) {
+  return block.map(c => `## Kapitel ${c.nr}: ${c.title}\n\n${c.content}`).join('\n\n');
+}
+
+async function lkAsk(key, system, user, maxTokens) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:maxTokens, system, messages:[{role:'user',content:user}]})
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || 'HTTP ' + res.status);
+  const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+  if (!text) throw new Error('Leere Antwort');
+  return text;
+}
+
+async function lkAnalyzeBook() {
+  const key = document.getElementById('api-key').value.trim() || localStorage.getItem('buch_api_key') || localStorage.getItem('buch_apikey') || '';
+  if (!key) { toast('⚠ API-Key fehlt'); return; }
+
+  if (!LK.chapters.length) lkAnalyze();
+  if (!LK.chapters.length && !document.getElementById('lk-text').value.trim()) { toast('⚠ Erst Text laden'); return; }
+  const words = lkWords(lkFullText());
+  if (!words) { toast('⚠ Erst Text laden'); return; }
+  if (lkProfileGet() && !confirm('Es gibt schon ein Buch-Profil. Neu erstellen und das alte ersetzen?')) return;
+
+  const system = `Du bist ein erfahrener deutschsprachiger Lektor und liest ein Manuskript zum ersten Mal komplett durch, bevor du einen einzigen Satz änderst.
+
+Du änderst JETZT NICHTS. Du erstellst nur ein Profil des Buches, mit dem später Kapitel für Kapitel lektoriert wird.
+
+Gib genau diese Abschnitte zurück, in dieser Reihenfolge, mit genau diesen Überschriften:
+
+STIMME & STIL
+Erzählperspektive, Zeitform, typische Satzlänge, Ton. Und vor allem: welche Eigenheiten sind gewollt und müssen erhalten bleiben? Nenne konkrete Beispiele aus dem Text. Das ist die Handschrift der Autorin — die darf ein Lektorat nicht wegbügeln.
+
+FIGUREN
+Jede wiederkehrende Figur mit einer Zeile: Name (genaue Schreibweise), Rolle, und woran man sie im Dialog erkennt. Vermerke, wenn zwei Figuren gleich klingen oder sich Namen verwechseln lassen.
+
+SCHREIBWEISEN
+Wie hält es die Autorin bislang mit Zahlen, Uhrzeiten, Abkürzungen, Dienstgraden, Ortsnamen, Anführungszeichen, Dialekt? Nenne die Variante, die im Buch überwiegt — die gilt ab jetzt. Liste darunter jede Stelle, wo es abweicht.
+
+WIEDERHOLUNGEN
+Formulierungen, Bilder und Satzmuster, die zu oft vorkommen. Mit ungefährer Anzahl und Kapitelangabe.
+
+WIDERSPRÜCHE & LOGIKLÜCKEN
+Konkrete Stellen, an denen sich das Buch selbst widerspricht oder etwas nicht aufgeht: Zeitangaben, Augenfarben, wer was wann wissen konnte, Ermittlungsschritte die übersprungen wurden. Immer mit Kapitelangabe. Wenn du nichts findest, schreib das ehrlich hin.
+
+ROTER FADEN
+Wo trägt der Spannungsbogen, wo hängt er durch? Welche aufgeworfene Frage wird nie beantwortet?
+
+GESAMTEINSCHÄTZUNG
+Ehrlich, in vier bis sechs Sätzen: Was trägt dieses Buch, was ist die größte Schwäche, und was würdest du zuerst anpacken? Kein Lob aus Höflichkeit.
+
+Schreib knapp und konkret, in Stichpunkten. Keine Einleitung, kein Schlusswort.`;
+
+  const blocks = LK.chapters.length ? lkSplitBlocks() : [[{nr:1, title:'Text', content:document.getElementById('lk-text').value}]];
+  const n = blocks.length;
+
+  try {
+    /* Kurzes Buch: ein Durchgang, wie gehabt */
+    if (n === 1) {
+      showLoader('Das ganze Buch wird gelesen …', `${words.toLocaleString('de-DE')} Wörter — das dauert ein bis zwei Minuten`);
+      const text = await lkAsk(key, system, `Hier ist das komplette Manuskript:\n\n${lkBlockText(blocks[0])}`, 8000);
+      S.bookProfile = { text, words, parts:1, date:new Date().toLocaleString('de-DE') };
+    }
+
+    /* Langes Buch: Etappen lesen, danach zusammenführen */
+    else {
+      const parts = [];
+      for (let i = 0; i < n; i++) {
+        const von = blocks[i][0].nr, bis = blocks[i][blocks[i].length-1].nr;
+        showLoader(`Etappe ${i+1} von ${n} wird gelesen …`, `Kapitel ${von} bis ${bis} — insgesamt ${words.toLocaleString('de-DE')} Wörter`);
+        const teilSystem = system + `
+
+WICHTIG: Du siehst gerade nur Etappe ${i+1} von ${n} (Kapitel ${von} bis ${bis}), nicht das ganze Buch. Beurteile ausschließlich, was du hier vor dir hast, und schreib keine Vermutungen über die anderen Etappen. Bei ROTER FADEN und GESAMTEINSCHÄTZUNG hältst du dich kurz und beziehst dich nur auf diesen Abschnitt. Nenne bei jeder Beobachtung die Kapitelnummer.`;
+        parts.push(`===== ETAPPE ${i+1} von ${n} (Kapitel ${von}–${bis}) =====\n\n` +
+          await lkAsk(key, teilSystem, `Hier ist Etappe ${i+1} von ${n} des Manuskripts:\n\n${lkBlockText(blocks[i])}`, 8000));
+      }
+
+      showLoader('Etappen werden zusammengeführt …', 'Letzter Schritt');
+      const mergeSystem = `Du bist ein erfahrener deutschsprachiger Lektor. Ein Manuskript wurde in ${n} Etappen gelesen. Unten stehen die ${n} Teilberichte.
+
+Mach daraus EIN Profil des gesamten Buches, mit genau diesen Überschriften, in dieser Reihenfolge:
+STIMME & STIL
+FIGUREN
+SCHREIBWEISEN
+WIEDERHOLUNGEN
+WIDERSPRÜCHE & LOGIKLÜCKEN
+ROTER FADEN
+GESAMTEINSCHÄTZUNG
+
+So führst du zusammen:
+- Was mehrfach vorkommt, steht am Ende einmal da. Doppeltes streichen, nicht aneinanderhängen.
+- FIGUREN: eine Zeile pro Figur fürs ganze Buch. Wenn eine Figur in verschiedenen Etappen unterschiedlich beschrieben oder geschrieben wird, ist genau das ein Befund — schreib ihn hin.
+- SCHREIBWEISEN: zähl über alle Etappen zusammen und nenne die Variante, die im GANZEN Buch überwiegt. Die gilt. Darunter die Abweichungen mit Kapitelangabe.
+- WIEDERHOLUNGEN: Anzahlen aus den Etappen addieren. Eine Wendung, die in jeder Etappe drei Mal auftaucht, kommt im Buch zwölf Mal vor — das gehört sichtbar gemacht.
+- WIDERSPRÜCHE: die wichtigsten sind die ZWISCHEN den Etappen. Vergleiche die Angaben aus verschiedenen Teilen miteinander (Zeiten, Aussehen, wer was wann wusste) und nenne, was nicht zusammenpasst, mit Kapitelangaben.
+- ROTER FADEN und GESAMTEINSCHÄTZUNG schreibst du jetzt neu, fürs ganze Buch, nicht als Aneinanderreihung der Teilurteile. Ehrlich, kein Lob aus Höflichkeit.
+
+Knapp und konkret, in Stichpunkten. Keine Einleitung, kein Schlusswort, keine Erwähnung der Etappen im Ergebnis.`;
+      const text = await lkAsk(key, mergeSystem, parts.join('\n\n'), 8000);
+      S.bookProfile = { text, words, parts:n, date:new Date().toLocaleString('de-DE') };
+    }
+
+    saveState();
+    lkRenderProfile();
+    document.getElementById('lk-profile-area').scrollIntoView({behavior:'smooth', block:'start'});
+    toast(n === 1 ? '✅ Buch-Profil erstellt' : `✅ Buch-Profil aus ${n} Etappen erstellt`);
+  } catch(e) { toast('❌ ' + e.message); }
+  finally { hideLoader(); }
+}
+
+/* Nur die Abschnitte, die beim Lektorieren gebraucht werden */
+function lkProfileContext() {
+  const p = lkProfileGet();
+  if (!p) return '';
+  const t = p.text;
+  const want = ['STIMME & STIL','FIGUREN','SCHREIBWEISEN','WIEDERHOLUNGEN'];
+  const heads = ['STIMME & STIL','FIGUREN','SCHREIBWEISEN','WIEDERHOLUNGEN','WIDERSPRÜCHE & LOGIKLÜCKEN','ROTER FADEN','GESAMTEINSCHÄTZUNG'];
+  let out = '';
+  want.forEach(h => {
+    const start = t.indexOf(h);
+    if (start < 0) return;
+    let end = t.length;
+    heads.forEach(h2 => {
+      if (h2 === h) return;
+      const i = t.indexOf(h2, start + h.length);
+      if (i > -1 && i < end) end = i;
+    });
+    out += t.slice(start, end).trim() + '\n\n';
+  });
+  if (!out.trim()) out = t.slice(0, 4000);
+  return `\n\nBUCH-PROFIL (aus dem kompletten Manuskript — das Kapitel unten ist nur ein Ausschnitt davon):
+${out.trim()}
+
+Halte dich an dieses Profil: Die Handschrift der Autorin bleibt erhalten, die Schreibweisen werden vereinheitlicht, und die genannten Wiederholungen werden hier abgebaut.`;
+}
+
 /* Anweisung für EIN Kapitel: wie viele Treffer es behalten darf */
 function lkFloskelInstr(chapterText) {
   const all = lkFullText();
@@ -22323,6 +22574,25 @@ function setLkMode(mode, btn) {
     b.style.color       = m===mode ? 'var(--gold-lt)' : 'var(--muted)';
     b.style.fontWeight  = m===mode ? '600' : '400';
   });
+}
+
+function setLkWork(mode) {
+  LK.workMode = mode;
+  const on = { border:'#1D9E75', bg:'rgba(29,158,117,0.12)', col:'#1D9E75', w:'600' };
+  ['kommentar','direkt'].forEach(m => {
+    const b = document.getElementById('lk-work-'+m);
+    if (!b) return;
+    const sel = m === mode;
+    b.style.borderColor = sel ? on.border : 'var(--border2)';
+    b.style.background  = sel ? on.bg : 'rgba(255,255,255,0.04)';
+    b.style.color       = sel ? on.col : 'var(--muted)';
+    b.style.fontWeight  = sel ? on.w : '400';
+    b.textContent = (m==='kommentar' ? '💬 Vorschläge zum Abnicken' : '✏️ Direkt ändern') + (sel ? ' ✓' : '');
+  });
+  document.getElementById('lk-work-hint').textContent = mode === 'kommentar'
+    ? 'Du bekommst jede Änderung einzeln vorgelegt, mit Begründung, und entscheidest selbst. Nichts wird ohne dein Ja übernommen.'
+    : 'Das Kapitel wird in einem Rutsch überarbeitet. Schneller, aber du siehst nicht, was im Einzelnen geändert wurde.';
+  lkRenderChapterList();
 }
 
 function lkDragOver(e) { e.preventDefault(); document.getElementById('lk-upload-zone').style.borderColor='var(--gold)'; }
@@ -22376,7 +22646,7 @@ function lkUpdateStats() {
 function lkFromBook() {
   const chs = S.toc.map(ch => ({ title: ch.title, content: S.chapters[ch.id]||'' })).filter(ch=>ch.content);
   if (!chs.length) { toast('⚠ Noch keine Kapitel geschrieben'); return; }
-  LK.chapters = chs.map(ch => ({...ch, accepted:false, lektorated:''}));
+  LK.chapters = chs.map(ch => ({...ch, accepted:false, lektorated:'', origWords: lkWords(ch.content)}));
   document.getElementById('lk-text').value = chs.map(ch=>`## ${ch.title}\n\n${ch.content}`).join('\n\n---\n\n');
   lkUpdateStats();
   lkRenderChapterList();
@@ -22406,12 +22676,12 @@ function lkAnalyze() {
       const start = ch.lineIndex+1;
       const end = i+1 < detected.length ? detected[i+1].lineIndex : lines.length;
       const content = lines.slice(start,end).join('\n').trim();
-      if (content.split(/\s+/).filter(w=>w).length > 10) LK.chapters.push({title:ch.title, content, accepted:false, lektorated:''});
+      if (content.split(/\s+/).filter(w=>w).length > 10) LK.chapters.push({title:ch.title, content, accepted:false, lektorated:'', origWords: lkWords(content)});
     });
   }
   if (!LK.chapters.length) {
     const words = text.split(/\s+/).filter(w=>w);
-    for (let i=0; i<words.length; i+=3000) LK.chapters.push({title:`Abschnitt ${LK.chapters.length+1}`, content:words.slice(i,i+3000).join(' '), accepted:false, lektorated:''});
+    for (let i=0; i<words.length; i+=3000) LK.chapters.push({title:`Abschnitt ${LK.chapters.length+1}`, content:words.slice(i,i+3000).join(' '), accepted:false, lektorated:'', origWords: Math.min(3000, words.length-i)});
   }
   LK.accepted = [];
   lkRenderChapterList();
@@ -22419,7 +22689,33 @@ function lkAnalyze() {
   toast(`✅ ${LK.chapters.length} Kapitel erkannt`);
 }
 
+function lkWords(t) { return String(t||'').trim() ? String(t).trim().split(/\s+/).length : 0; }
+
+/* Längenwächter: wie viel ist vom Buch übrig? */
+function lkRenderLength() {
+  const bar = document.getElementById('lk-length-bar');
+  if (!bar) return;
+  const withOrig = LK.chapters.filter(c => typeof c.origWords === 'number');
+  if (!withOrig.length) { bar.style.display = 'none'; return; }
+  const before = withOrig.reduce((s,c)=>s+c.origWords, 0);
+  const after  = withOrig.reduce((s,c)=>s+lkWords(c.content), 0);
+  const diff = after - before;
+  const pct = before ? (diff/before*100) : 0;
+  const heavy = pct < -8;
+  const col = heavy ? '#E08585' : (pct < -3 ? '#E0A855' : '#1D9E75');
+  bar.style.display = 'block';
+  bar.style.borderColor = heavy ? 'rgba(224,133,133,0.5)' : 'var(--border2)';
+  bar.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span><strong style="color:var(--gold-lt);">Länge:</strong> ${before.toLocaleString('de-DE')} → <strong style="color:${col};">${after.toLocaleString('de-DE')}</strong> Wörter
+        <span style="color:${col};font-weight:600;">(${diff>=0?'+':''}${diff.toLocaleString('de-DE')} · ${pct>=0?'+':''}${pct.toFixed(1)} %)</span></span>
+      <span style="color:var(--muted);font-size:.75rem;">ca. ${Math.round(after/250).toLocaleString('de-DE')} Seiten</span>
+    </div>
+    ${heavy ? '<div style="color:#E08585;font-size:.78rem;margin-top:7px;line-height:1.6;">Das Buch ist deutlich kürzer geworden. Schau dir die betroffenen Kapitel nochmal an — normal sind ein bis drei Prozent.</div>' : ''}`;
+}
+
 function lkRenderChapterList() {
+  lkRenderLength();
   const list = document.getElementById('lk-chapter-list');
   list.style.display = 'block';
   list.innerHTML = LK.chapters.map((ch,i) => `
@@ -22427,8 +22723,8 @@ function lkRenderChapterList() {
       <span>${ch.accepted?'✅':'📄'}</span>
       <span style="flex:1;font-size:.85rem;color:var(--ink2);font-weight:500;">${ch.title}</span>
       <span style="font-size:.72rem;color:var(--muted);">${ch.content.split(/\s+/).length.toLocaleString('de-DE')} Wörter</span>
-      <button onclick="lkDoChapter(${i})" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:${ch.accepted?'#1D9E75':'var(--gold-lt)'};font-size:.75rem;cursor:pointer;">
-        ${ch.accepted?'✓ Fertig':'✏️ Lektorieren'}
+      <button onclick="lkRunChapter(${i})" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:${ch.accepted?'#1D9E75':'var(--gold-lt)'};font-size:.75rem;cursor:pointer;">
+        ${ch.accepted ? '✓ Fertig' : (LK.workMode==='kommentar' ? '💬 Prüfen' : '✏️ Lektorieren')}
       </button>
     </div>`).join('');
 }
@@ -22465,7 +22761,7 @@ REGELN:
 2. Alle Absätze, Dialoge und Zeilenumbrüche bleiben erhalten
 3. Handlung, Figuren, Namen und Fakten bleiben unverändert
 4. Der Text muss nach einem Menschen klingen, nicht nach KI
-5. Die Gesamtlänge darf um bis zu 10 % schrumpfen, mehr nicht — nur dort kürzen, wo Floskeln wegfallen${flBlock}`;
+5. Die Gesamtlänge darf um bis zu 10 % schrumpfen, mehr nicht — nur dort kürzen, wo Floskeln wegfallen${flBlock}${lkProfileContext()}`;
 
   document.getElementById('lk-output-area').style.display = 'none';
   showLoader(`Lektoriere: "${ch.title}" …`, `Modus: ${LK.mode}`);
@@ -22489,6 +22785,205 @@ REGELN:
   } catch(e) { hideLoader(); toast('❌ Fehler: '+e.message); }
 }
 
+/* ── Kommentar-Modus: Vorschläge statt Überschreiben ──────────────── */
+
+function lkRunChapter(index) {
+  if (index == null || index < 0) return;
+  return LK.workMode === 'kommentar' ? lkCommentChapter(index) : lkDoChapter(index);
+}
+
+const LK_ART = {
+  floskel:        { label:'Floskel',        color:'#E08585' },
+  wiederholung:   { label:'Wiederholung',   color:'#E0A855' },
+  stil:           { label:'Stil',           color:'#AFA9EC' },
+  rechtschreibung:{ label:'Rechtschreibung',color:'#7FB3D5' },
+  schreibweise:   { label:'Schreibweise',   color:'#7FB3D5' },
+  logik:          { label:'Logik',          color:'#E0705B' }
+};
+
+/* Findet die Stelle im Text — auch wenn Leerzeichen abweichen */
+function lkFindPlace(text, needle) {
+  if (!needle) return null;
+  let i = text.indexOf(needle);
+  if (i > -1) return { index:i, len:needle.length };
+  const esc = needle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  try {
+    const m = new RegExp(esc).exec(text);
+    if (m) return { index:m.index, len:m[0].length };
+  } catch(e){}
+  return null;
+}
+
+async function lkCommentChapter(index) {
+  const key = document.getElementById('api-key').value.trim() || localStorage.getItem('buch_api_key') || localStorage.getItem('buch_apikey') || '';
+  if (!key) { toast('⚠ API-Key fehlt'); return; }
+  LK.currentIndex = index;
+  const ch = LK.chapters[index];
+
+  const tiefe = {
+    leicht:   'Melde nur echte Fehler: Rechtschreibung, Grammatik, Zeichensetzung.',
+    mittel:   'Melde Fehler, Füllwörter, Floskeln über dem Kontingent und uneinheitliche Schreibweisen.',
+    intensiv: 'Melde zusätzlich schwache Formulierungen, holprige Übergänge, Wortwiederholungen und Sätze, die sich lesen wie von einer Maschine.'
+  }[LK.mode];
+
+  const flLines = lkFloskelInstr(ch.content);
+  const flBlock = flLines.length ? `\n\nFLOSKEL-KONTINGENT in diesem Kapitel:\n${flLines.join('\n')}\nFür jede Stelle über dem Kontingent machst du einen Vorschlag mit art "floskel". Erste Wahl ist streichen — dann ist "vorschlag" der Satz ohne die Floskel, oder ein leerer Text, wenn der ganze Satz weg soll.` : '';
+
+  const system = `Du bist ein erfahrener deutschsprachiger Lektor. Du änderst NICHTS selbst — du machst Vorschläge, über die die Autorin entscheidet.
+
+AUFGABE: ${tiefe}${flBlock}${lkProfileContext()}
+
+Antworte NUR mit einem JSON-Array, ohne Einleitung, ohne Code-Fence:
+[{"original":"","vorschlag":"","grund":"","art":"floskel"}]
+
+Regeln für jeden Eintrag:
+- "original" muss ZEICHENGENAU aus dem Kapitel abgeschrieben sein, sonst findet das Programm die Stelle nicht. Nimm so viel Text, dass die Stelle im Kapitel eindeutig ist — im Zweifel den ganzen Satz. Erfinde nichts dazu und lass nichts weg.
+- "vorschlag" ist der Ersatztext. Leerer Text bedeutet: ersatzlos streichen.
+- "grund" ist EIN kurzer Satz in normalem Deutsch, ohne Fachjargon. Sag, was die Stelle schwächt — nicht was du getan hast.
+- "art" ist genau eines von: floskel, wiederholung, stil, rechtschreibung, schreibweise, logik
+- Melde nur, was den Text wirklich besser macht. Lieber 20 gute Vorschläge als 200 belanglose.
+- Finger weg von der Handschrift der Autorin: bewusste Eigenheiten, Dialekt in Dialogen und ihr Rhythmus bleiben.
+- Bei "logik" darf "vorschlag" leer bleiben, wenn nur du auf den Widerspruch hinweist.`;
+
+  document.getElementById('lk-output-area').style.display = 'none';
+  document.getElementById('lk-comment-area').style.display = 'none';
+  showLoader(`Kapitel wird geprüft: "${ch.title}" …`, `Modus: ${LK.mode} — jede Stelle einzeln`);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-6',max_tokens:16000,system,messages:[{role:'user',content:`Prüfe dieses Kapitel:\n\n${ch.content}`}]})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || 'HTTP ' + res.status);
+    const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const m = raw.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('Antwort nicht lesbar');
+
+    ch.suggestions = JSON.parse(m[0]).map((s,i) => ({
+      id: 'v'+i,
+      original: s.original || '',
+      vorschlag: s.vorschlag === undefined ? '' : s.vorschlag,
+      grund: s.grund || '',
+      art: LK_ART[s.art] ? s.art : 'stil',
+      status: 'offen',
+      found: !!lkFindPlace(ch.content, s.original || '')
+    }));
+    document.getElementById('lk-comment-filter').value = 'offen';
+    lkRenderComments();
+    document.getElementById('lk-comment-area').style.display = 'block';
+    const lost = ch.suggestions.filter(s=>!s.found).length;
+    toast(`✅ ${ch.suggestions.length} Vorschläge${lost?` (${lost} ohne Fundstelle)`:''}`);
+  } catch(e) { toast('❌ ' + e.message); }
+  finally { hideLoader(); }
+}
+
+function lkSetSuggestion(id, status) {
+  const ch = LK.chapters[LK.currentIndex];
+  const s = (ch.suggestions||[]).find(x=>x.id===id);
+  if (!s) return;
+  s.status = (s.status === status) ? 'offen' : status;
+  lkRenderComments();
+}
+
+function lkAllSuggestions(status) {
+  const ch = LK.chapters[LK.currentIndex];
+  (ch.suggestions||[]).forEach(s => { if (s.found || status==='nein') s.status = status; });
+  lkRenderComments();
+}
+
+function lkRenderComments() {
+  const ch = LK.chapters[LK.currentIndex];
+  if (!ch || !ch.suggestions) return;
+  const all = ch.suggestions;
+  const filter = document.getElementById('lk-comment-filter').value;
+  const shown = all.filter(s => filter==='alle' ? true : s.status===filter);
+
+  const ja = all.filter(s=>s.status==='ja').length;
+  const nein = all.filter(s=>s.status==='nein').length;
+  const offen = all.filter(s=>s.status==='offen').length;
+  document.getElementById('lk-comment-title').textContent = `Vorschläge für „${ch.title}"`;
+  document.getElementById('lk-comment-count').textContent = `${all.length} gesamt · ${offen} offen · ${ja} angenommen · ${nein} abgelehnt`;
+  const delta = all.filter(s=>s.status==='ja' && s.found)
+                   .reduce((sum,s) => sum + (lkWords(s.vorschlag) - lkWords(s.original)), 0);
+  const chBefore = typeof ch.origWords === 'number' ? ch.origWords : lkWords(ch.content);
+  const pct = chBefore ? (delta/chBefore*100) : 0;
+  document.getElementById('lk-comment-summary').innerHTML = ja
+    ? `${ja} Änderung${ja===1?' wird':'en werden'} übernommen · Kapitellänge <strong style="color:${pct<-10?'#E08585':'var(--ink2)'};">${delta>=0?'+':''}${delta} Wörter (${pct>=0?'+':''}${pct.toFixed(1)} %)</strong>`
+    : 'Noch nichts angenommen.';
+
+  const box = document.getElementById('lk-comment-list');
+  if (!shown.length) {
+    box.innerHTML = `<div style="border:1px dashed var(--border2);border-radius:10px;padding:24px;text-align:center;color:var(--muted);font-size:.85rem;">${offen ? 'Nichts in dieser Ansicht.' : 'Alle Vorschläge durchgegangen — du kannst das Kapitel abschließen.'}</div>`;
+    return;
+  }
+
+  box.innerHTML = shown.map(s => {
+    const art = LK_ART[s.art];
+    const del = !String(s.vorschlag).trim();
+    const border = s.status==='ja' ? '#1D9E75' : s.status==='nein' ? 'var(--border2)' : 'var(--border2)';
+    const dim = s.status==='nein' ? 'opacity:.5;' : '';
+    return `
+    <div style="border:1px solid ${border};border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:10px;padding:14px 16px;${dim}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;">
+        <span style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${art.color};border:1px solid ${art.color}55;border-radius:99px;padding:2px 9px;">${art.label}</span>
+        ${!s.found ? '<span style="font-size:.7rem;color:#E08585;">Stelle nicht gefunden — nur zur Information</span>' : ''}
+        ${s.status==='ja' ? '<span style="font-size:.7rem;color:#1D9E75;font-weight:600;">✓ angenommen</span>' : ''}
+        ${s.status==='nein' ? '<span style="font-size:.7rem;color:var(--muted);">abgelehnt</span>' : ''}
+      </div>
+      <div style="font-size:.84rem;color:var(--muted);margin-bottom:4px;">Bisher:</div>
+      <div style="background:rgba(198,80,80,0.08);border-left:3px solid rgba(198,80,80,0.5);border-radius:0 6px 6px 0;padding:8px 12px;font-size:.86rem;color:var(--ink2);line-height:1.65;margin-bottom:10px;white-space:pre-wrap;">${escH(s.original)}</div>
+      <div style="font-size:.84rem;color:var(--muted);margin-bottom:4px;">${del ? 'Vorschlag: ersatzlos streichen' : 'Vorschlag:'}</div>
+      ${del ? '' : `<div style="background:rgba(29,158,117,0.08);border-left:3px solid rgba(29,158,117,0.5);border-radius:0 6px 6px 0;padding:8px 12px;font-size:.86rem;color:var(--ink2);line-height:1.65;margin-bottom:10px;white-space:pre-wrap;">${escH(s.vorschlag)}</div>`}
+      <div style="font-size:.8rem;color:var(--muted);font-style:italic;margin-bottom:12px;line-height:1.6;">${escH(s.grund)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${s.found ? `<button onclick="lkSetSuggestion('${s.id}','ja')" style="padding:6px 14px;border-radius:7px;border:1px solid ${s.status==='ja'?'#1D9E75':'var(--border2)'};background:${s.status==='ja'?'rgba(29,158,117,0.18)':'rgba(255,255,255,0.04)'};color:#1D9E75;font-size:.78rem;cursor:pointer;font-weight:600;">✓ Übernehmen</button>` : ''}
+        <button onclick="lkSetSuggestion('${s.id}','nein')" style="padding:6px 14px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--muted);font-size:.78rem;cursor:pointer;">✗ So lassen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function lkApplyComments() {
+  const ch = LK.chapters[LK.currentIndex];
+  if (!ch || !ch.suggestions) return;
+  const take = ch.suggestions.filter(s => s.status==='ja' && s.found);
+  const offen = ch.suggestions.filter(s => s.status==='offen').length;
+  if (offen && !confirm(`${offen} Vorschläge sind noch offen. Die bleiben unverändert. Kapitel jetzt abschließen?`)) return;
+
+  let text = ch.content, done = 0;
+  take.forEach(s => {
+    const place = lkFindPlace(text, s.original);
+    if (!place) return;
+    text = text.slice(0, place.index) + s.vorschlag + text.slice(place.index + place.len);
+    done++;
+  });
+  text = text.replace(/[ \t]{2,}/g,' ')
+             .replace(/ +([,.;:!?])/g,'$1')
+             .replace(/[ \t]+$/gm,'')
+             .replace(/^[ \t]+/gm,'')
+             .replace(/\n{3,}/g,'\n\n')
+             .trim();
+
+  const wBefore = typeof ch.origWords === 'number' ? ch.origWords : lkWords(ch.content);
+  const wAfter = lkWords(text);
+  if (wBefore && (wAfter - wBefore) / wBefore < -0.15) {
+    if (!confirm(`Achtung: Dieses Kapitel schrumpft von ${wBefore} auf ${wAfter} Wörter — das ist viel. Trotzdem übernehmen?`)) return;
+  }
+
+  ch.lektorated = text;
+  ch.content = text;
+  ch.accepted = true;
+  ch.suggestions = null;
+  LK.accepted = LK.chapters.filter(c=>c.accepted);
+  document.getElementById('lk-comment-area').style.display = 'none';
+  lkRenderChapterList(); lkRenderAccepted(); lkScanFloskeln(false);
+  toast(`✅ ${done} Änderung${done===1?'':'en'} übernommen`);
+
+  const next = LK.chapters.findIndex((c,i)=>!c.accepted && i>LK.currentIndex);
+  if (next>=0 && confirm('Kapitel fertig. Gleich das nächste prüfen?')) lkRunChapter(next);
+}
+
 function lkAccept() {
   if (LK.currentIndex < 0) return;
   const ch = LK.chapters[LK.currentIndex];
@@ -22508,6 +23003,7 @@ function lkNext() {
 }
 
 async function lkAllAtOnce() {
+  if (LK.workMode === 'kommentar' && !confirm('Achtung: „Alle auf einmal" überschreibt die Kapitel direkt, ohne dass du die Vorschläge siehst. Trotzdem?')) return;
   if (!confirm(`Alle ${LK.chapters.length} Kapitel automatisch lektorieren?`)) return;
   for (let i=0; i<LK.chapters.length; i++) { if (!LK.chapters[i].accepted) { await lkDoChapter(i); lkAccept(); } }
 }

@@ -22045,9 +22045,9 @@ Antworte NUR mit einem JSON-Array, ohne Einleitung, ohne Code-Fence:
   showLoader('Besetzung wird entworfen …', 'Einen Moment bitte');
   try {
     const raw = await callClaude(prompt, 6000);
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (!m) throw new Error('Antwort nicht lesbar');
-    JSON.parse(m[0]).forEach(p => bbAddPerson({ ...p, open:false }));
+    const arr = lkSafeJSON(raw);
+    if (!arr) throw new Error('Die Antwort kam durcheinander zurück. Versuch es nochmal.');
+    arr.forEach(p => bbAddPerson({ ...p, open:false }));
     toast('✅ Besetzung ergänzt');
   } catch(e) { toast('❌ ' + e.message); }
   finally { hideLoader(); }
@@ -22211,9 +22211,8 @@ Antworte NUR mit einem JSON-Array in dieser Reihenfolge, ohne Einleitung, ohne C
   showLoader('Plot wird entworfen …', 'Einen Moment bitte');
   try {
     const raw = await callClaude(prompt, 6000);
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (!m) throw new Error('Antwort nicht lesbar');
-    const arr = JSON.parse(m[0]);
+    const arr = lkSafeJSON(raw);
+    if (!arr) throw new Error('Die Antwort kam durcheinander zurück. Versuch es nochmal.');
     S.plot.forEach((p,i) => { if (arr[i]) { p.text = arr[i].text || p.text; p.chapter = arr[i].chapter || p.chapter; } });
     bbSave(); bbRenderPlot();
     toast('✅ Plot gefüllt — jetzt umschreiben, bis es deins ist');
@@ -22801,6 +22800,49 @@ const LK_ART = {
   logik:          { label:'Logik',          color:'#E0705B' }
 };
 
+/* Repariert JSON, in dem rohe Zeilenumbrüche stecken */
+function lkSafeJSON(raw) {
+  const m = String(raw).match(/\[[\s\S]*\]/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch(e){}
+  let out = '', inStr = false, esc = false;
+  for (const c of m[0]) {
+    if (esc) { out += c; esc = false; continue; }
+    if (c === '\\') { out += c; esc = true; continue; }
+    if (c === '"') { inStr = !inStr; out += c; continue; }
+    if (inStr && (c === '\n' || c === '\r')) { out += '\\n'; continue; }
+    if (inStr && c === '\t') { out += '\\t'; continue; }
+    out += c;
+  }
+  try { return JSON.parse(out); } catch(e){}
+  return null;
+}
+
+/* Liest das Blockformat der Vorschläge — verträgt Anführungszeichen,
+   Zeilenumbrüche und alles andere, was in einem Roman vorkommt.      */
+function lkParseSuggestions(raw) {
+  const text = String(raw);
+  const out = [];
+  const blocks = text.split(/^@@VORSCHLAG[ \t]*$/m).slice(1);
+  const grab = (b, tag) => {
+    const re = new RegExp('^@' + tag + '[ \\t]*\\r?\\n([\\s\\S]*?)^@ENDE-' + tag + '[ \\t]*$', 'm');
+    const m = b.match(re);
+    return m ? m[1].replace(/\r/g,'').replace(/\n+$/,'') : null;
+  };
+  blocks.forEach(b => {
+    const original = grab(b, 'ORIGINAL');
+    if (original === null || !original.trim()) return;
+    const neu = grab(b, 'NEU');
+    const art = (b.match(/^@ART:[ \t]*(\S+)/m) || [,''])[1].toLowerCase();
+    const grund = (b.match(/^@GRUND:[ \t]*(.+)$/m) || [,''])[1].trim();
+    out.push({ original, vorschlag: neu === null ? '' : neu, grund, art });
+  });
+
+  if (out.length) return out;
+  const j = lkSafeJSON(text);           // falls die KI doch JSON schickt
+  return Array.isArray(j) ? j : null;
+}
+
 /* Findet die Stelle im Text — auch wenn Leerzeichen abweichen */
 function lkFindPlace(text, needle) {
   if (!needle) return null;
@@ -22833,17 +22875,28 @@ async function lkCommentChapter(index) {
 
 AUFGABE: ${tiefe}${flBlock}${lkProfileContext()}
 
-Antworte NUR mit einem JSON-Array, ohne Einleitung, ohne Code-Fence:
-[{"original":"","vorschlag":"","grund":"","art":"floskel"}]
+Antworte in genau diesem Blockformat, ohne Einleitung, ohne Schlusswort, ohne Code-Fence. Für jeden Vorschlag ein Block:
 
-Regeln für jeden Eintrag:
-- "original" muss ZEICHENGENAU aus dem Kapitel abgeschrieben sein, sonst findet das Programm die Stelle nicht. Nimm so viel Text, dass die Stelle im Kapitel eindeutig ist — im Zweifel den ganzen Satz. Erfinde nichts dazu und lass nichts weg.
-- "vorschlag" ist der Ersatztext. Leerer Text bedeutet: ersatzlos streichen.
-- "grund" ist EIN kurzer Satz in normalem Deutsch, ohne Fachjargon. Sag, was die Stelle schwächt — nicht was du getan hast.
-- "art" ist genau eines von: floskel, wiederholung, stil, rechtschreibung, schreibweise, logik
+@@VORSCHLAG
+@ART: floskel
+@ORIGINAL
+Der Text, so wie er jetzt im Kapitel steht.
+@ENDE-ORIGINAL
+@NEU
+Der Text, wie er stattdessen dastehen soll.
+@ENDE-NEU
+@GRUND: Ein kurzer Satz, was die Stelle schwächt.
+
+Regeln:
+- Zwischen @ORIGINAL und @ENDE-ORIGINAL steht der Text ZEICHENGENAU so, wie er im Kapitel steht — mit allen Anführungszeichen, Gedankenstrichen und Absätzen. Schreib ihn ab, formuliere ihn nicht um. Findet das Programm die Stelle nicht wieder, ist der Vorschlag wertlos.
+- Nimm so viel Text, dass die Stelle im Kapitel eindeutig ist — im Zweifel den ganzen Satz.
+- Zwischen @NEU und @ENDE-NEU steht der Ersatz. Lass den Bereich leer, wenn die Stelle ersatzlos gestrichen werden soll.
+- @ART ist genau eines von: floskel, wiederholung, stil, rechtschreibung, schreibweise, logik
+- @GRUND ist EIN Satz in normalem Deutsch, ohne Fachjargon, auf einer Zeile. Sag, was die Stelle schwächt — nicht was du getan hast.
+- Die Wörter @@VORSCHLAG, @ORIGINAL, @ENDE-ORIGINAL, @NEU, @ENDE-NEU und @GRUND stehen immer allein am Zeilenanfang.
 - Melde nur, was den Text wirklich besser macht. Lieber 20 gute Vorschläge als 200 belanglose.
 - Finger weg von der Handschrift der Autorin: bewusste Eigenheiten, Dialekt in Dialogen und ihr Rhythmus bleiben.
-- Bei "logik" darf "vorschlag" leer bleiben, wenn nur du auf den Widerspruch hinweist.`;
+- Bei @ART: logik darf der Ersatz leer bleiben, wenn du nur auf den Widerspruch hinweist.`;
 
   document.getElementById('lk-output-area').style.display = 'none';
   document.getElementById('lk-comment-area').style.display = 'none';
@@ -22857,10 +22910,11 @@ Regeln für jeden Eintrag:
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || 'HTTP ' + res.status);
     const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (!m) throw new Error('Antwort nicht lesbar');
+    const parsed = lkParseSuggestions(raw);
+    if (!parsed) throw new Error('Die Antwort kam durcheinander zurück. Klick nochmal auf Prüfen — beim zweiten Versuch klappt es meist.');
+    if (!parsed.length) { toast('✅ Nichts zu beanstanden in diesem Kapitel'); return; }
 
-    ch.suggestions = JSON.parse(m[0]).map((s,i) => ({
+    ch.suggestions = parsed.map((s,i) => ({
       id: 'v'+i,
       original: s.original || '',
       vorschlag: s.vorschlag === undefined ? '' : s.vorschlag,

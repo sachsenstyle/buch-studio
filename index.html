@@ -20773,8 +20773,23 @@ select option{background:var(--card2)}
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
           <button class="btn btn-gold" onclick="bbAddPerson()">+ Person anlegen</button>
+          <button class="btn btn-outline btn-sm" onclick="bbShowPaste()">📋 Personen einfügen</button>
           <button class="btn btn-outline btn-sm" onclick="bbSuggestPeople()">✨ KI schlägt Besetzung vor</button>
           <button class="btn btn-outline btn-sm" onclick="bbCheckNames()">🔤 Namen prüfen</button>
+        </div>
+
+        <!-- Personen aus Text übernehmen -->
+        <div id="bb-paste-area" style="display:none;border:1px solid rgba(212,168,67,0.4);border-radius:10px;padding:16px 18px;background:rgba(212,168,67,0.06);margin-bottom:18px;">
+          <strong style="color:var(--gold-lt);font-size:.9rem;">📋 Personen aus Text übernehmen</strong>
+          <div style="font-size:.8rem;color:var(--muted);margin:8px 0 10px;line-height:1.6;">
+            Figurenliste aus einem anderen Band, aus Word oder von einem Zettel hier hineinkopieren — egal in welcher Form. Das Tool sortiert die Angaben selbst in die Felder ein. Vorhandene Personen mit gleichem Namen werden ergänzt, nicht doppelt angelegt.
+          </div>
+          <textarea id="bb-paste-text" placeholder="Zum Beispiel:&#10;&#10;Sandy Jung – Kriminalkommissarin (KK)&#10;Intelligent, redegewandt, schnelles Auffassungsvermögen. Privat mit Klaus liiert.&#10;&#10;Klaus Wört – Kriminalkommissar (KK)&#10;Analytisch, geduldig, zurückhaltend." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;color:var(--ink2);font-size:.85rem;outline:none;min-height:200px;resize:vertical;line-height:1.7;"></textarea>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+            <button class="btn btn-gold" onclick="bbImportPeople()">Übernehmen</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('bb-paste-area').style.display='none'">Abbrechen</button>
+            <span id="bb-paste-hint" style="font-size:.78rem;color:var(--muted);"></span>
+          </div>
         </div>
 
         <div id="bb-name-warn" style="display:none;border:1px solid rgba(224,133,133,0.4);background:rgba(198,80,80,0.1);border-radius:8px;padding:12px 16px;font-size:.82rem;color:#E08585;margin-bottom:16px;line-height:1.6;"></div>
@@ -21996,6 +22011,107 @@ function bbRenderPeople() {
         </div>
       </div>
     </div>`).join('');
+}
+
+/* ── Personen aus eingefügtem Text übernehmen ─────────────────────── */
+function bbShowPaste() {
+  const a = document.getElementById('bb-paste-area');
+  a.style.display = 'block';
+  document.getElementById('bb-paste-hint').textContent = '';
+  document.getElementById('bb-paste-text').focus();
+}
+
+/* Erst ohne KI versuchen: "Name – Rolle" plus Folgezeilen */
+function bbParsePeopleOffline(raw) {
+  const lines = String(raw).replace(/\r/g,'').split('\n');
+  const out = []; let cur = null;
+  const kopf = /^\s*(?:[-*•]\s*)?([A-ZÄÖÜ][\wÄÖÜäöüß.'-]*(?:\s+[A-ZÄÖÜ][\wÄÖÜäöüß.'-]*){0,3})\s*[–—-]\s*(.+?)\s*$/;
+  const feld = /^\s*(Aussehen|Charakter|Sprechweise|Spricht so|Motiv|Ziel|Geheimnis|Entwicklung|Alter|Rolle|Beruf)\s*:\s*(.+)$/i;
+  const map = {aussehen:'look', charakter:'character', sprechweise:'speech', 'spricht so':'speech',
+               motiv:'motive', ziel:'motive', geheimnis:'secret', entwicklung:'arc', alter:'age',
+               rolle:'role', beruf:'age'};
+  lines.forEach(l => {
+    const t = l.trim();
+    if (!t) return;
+    const f = t.match(feld);
+    if (f && cur) { const k = map[f[1].toLowerCase()]; if (k) cur[k] = (cur[k] ? cur[k]+' ' : '') + f[2].trim(); return; }
+    const k = t.match(kopf);
+    if (k && k[1].split(/\s+/).length <= 4 && k[2].length < 120) {
+      cur = { name:k[1].trim(), role:k[2].trim(), age:'', look:'', character:'', speech:'', motive:'', secret:'', arc:'' };
+      out.push(cur); return;
+    }
+    if (cur) cur.character = (cur.character ? cur.character + ' ' : '') + t;
+  });
+  return out.filter(p => p.name);
+}
+
+async function bbImportPeople() {
+  bbInit();
+  const raw = document.getElementById('bb-paste-text').value.trim();
+  const hint = document.getElementById('bb-paste-hint');
+  if (!raw) { toast('⚠ Erst Text einfügen'); return; }
+
+  let leute = bbParsePeopleOffline(raw);
+  const duenn = !leute.length || leute.some(p => !p.role && !p.character);
+
+  if (duenn) {
+    const key = document.getElementById('api-key').value.trim() || localStorage.getItem('buch_api_key') || localStorage.getItem('buch_apikey') || '';
+    if (!key) {
+      if (!leute.length) { toast('⚠ Text nicht lesbar — bitte API-Key eintragen, dann sortiert die KI es ein'); return; }
+    } else {
+      hint.textContent = 'Die KI sortiert die Angaben ein …';
+      showLoader('Personen werden eingelesen …', 'Einen Moment bitte');
+      try {
+        const system = `Du bekommst eine Figurenliste in irgendeiner Form — aus einem Buch, aus Word, von einem Zettel. Sortiere sie in ein festes Raster.
+
+Antworte NUR mit einem JSON-Array, ohne Einleitung, ohne Code-Fence:
+[{"name":"","role":"","age":"","look":"","character":"","speech":"","motive":"","secret":"","arc":""}]
+
+Regeln:
+- Übernimm nur, was wirklich dasteht. Erfinde NICHTS dazu. Felder ohne Angabe bleiben leer.
+- "name": Vor- und Nachname, so wie im Text geschrieben.
+- "role": Funktion in der Geschichte oder Dienstgrad.
+- "age": Alter und/oder Beruf.
+- "speech": nur ausfüllen, wenn im Text wirklich etwas über die Sprechweise steht.
+- Fasse nichts zusammen und kürze nichts weg, was zu einer Person gehört.`;
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:8000, system, messages:[{role:'user',content:raw}]})
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error?.message || 'HTTP '+res.status);
+        const arr = lkSafeJSON((data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''));
+        if (arr && arr.length) leute = arr;
+      } catch(e) { toast('❌ ' + e.message); }
+      finally { hideLoader(); }
+    }
+  }
+
+  if (!leute.length) { hint.textContent = 'Daraus konnte ich niemanden herauslesen.'; return; }
+
+  let neu = 0, erg = 0;
+  leute.forEach(p => {
+    const name = String(p.name||'').trim();
+    if (!name) return;
+    const da = S.people.find(x => (x.name||'').trim().toLowerCase() === name.toLowerCase());
+    if (da) {
+      ['role','age','look','character','speech','motive','secret','arc'].forEach(k => {
+        const v = String(p[k]||'').trim();
+        if (v && !String(da[k]||'').trim()) da[k] = v;   // nur Lücken füllen, nichts überschreiben
+      });
+      erg++;
+    } else {
+      S.people.push(Object.assign({ id:bbId(), name:'', role:'', age:'', look:'', character:'',
+        speech:'', motive:'', secret:'', arc:'', open:false }, p, { id:bbId(), name, open:false }));
+      neu++;
+    }
+  });
+  bbSave(); bbRenderPeople();
+  document.getElementById('bb-paste-text').value = '';
+  document.getElementById('bb-paste-area').style.display = 'none';
+  toast(`✅ ${neu} neu, ${erg} ergänzt`);
+  setTimeout(bbCheckNames, 300);
 }
 
 /* Warnt vor Namen, die sich beim Lesen verwechseln lassen */

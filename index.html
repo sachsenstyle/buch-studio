@@ -21164,6 +21164,8 @@ ${bbPeopleContext()}
 ${bbPlotContext(-1)}
 
 Erstelle genau ${setup.chapters} Kapitel. Antworte NUR als JSON-Array ohne Markdown-Backticks:
+
+WICHTIG für das Format: Verwende INNERHALB der Werte keine geraden Anführungszeichen ("). Brauchst du wörtliche Rede oder eine Hervorhebung, nimm die deutschen Anführungszeichen „ und “. Und schreib keine Zeilenumbrüche in die Werte.
 [
   {"id": 1, "title": "Kapitelname", "description": "1-2 Sätze was in diesem Kapitel passiert / behandelt wird"},
   ...
@@ -21178,8 +21180,8 @@ Wichtig:
 
   try {
     const raw = await callClaude(prompt, 4000);
-    const cleaned = raw.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = lkSafeJSON(raw);
+    if (!parsed || !parsed.length) throw new Error('Die Antwort kam durcheinander zurück. Klick nochmal auf den Knopf — beim zweiten Versuch klappt es meist.');
     S.toc = parsed.map((c,i) => ({...c, id: c.id||i+1}));
     S.chapters = {};
     S.steps.toc = true;
@@ -22067,6 +22069,8 @@ async function bbImportPeople() {
 Antworte NUR mit einem JSON-Array, ohne Einleitung, ohne Code-Fence:
 [{"name":"","role":"","age":"","look":"","character":"","speech":"","motive":"","secret":"","arc":""}]
 
+WICHTIG für das Format: Verwende INNERHALB der Werte keine geraden Anführungszeichen ("). Brauchst du wörtliche Rede oder eine Hervorhebung, nimm die deutschen Anführungszeichen „ und “. Und schreib keine Zeilenumbrüche in die Werte.
+
 Regeln:
 - Übernimm nur, was wirklich dasteht. Erfinde NICHTS dazu. Felder ohne Angabe bleiben leer.
 - "name": Vor- und Nachname, so wie im Text geschrieben.
@@ -22322,7 +22326,9 @@ Regeln:
 - Keine Lösung durch Zufall — was am Ende hilft, muss vorher aufgetaucht sein.
 
 Antworte NUR mit einem JSON-Array in dieser Reihenfolge, ohne Einleitung, ohne Code-Fence:
-[{"text":"","chapter":""}]`;
+[{"text":"","chapter":""}]
+
+WICHTIG für das Format: Verwende INNERHALB der Werte keine geraden Anführungszeichen ("). Brauchst du wörtliche Rede oder eine Hervorhebung, nimm die deutschen Anführungszeichen „ und “. Und schreib keine Zeilenumbrüche in die Werte.`;
 
   showLoader('Plot wird entworfen …', 'Einen Moment bitte');
   try {

@@ -21009,26 +21009,73 @@ window.addEventListener('DOMContentLoaded', () => {
   loadState();
   bbInit();
   restoreFormValues();
+  watchFormValues();
   updateStepNav();
 });
 
+/* Alle Eingabefelder des Setups — die werden bei jeder Änderung gesichert */
+const FORM_IDS = ['s-title','s-subtitle','s-author','s-genre','s-topic','s-audience','s-lang',
+                  's-tone','s-chapters','s-words','imp-name','imp-street','imp-city','imp-country',
+                  'imp-email','imp-web','imp-publisher','imp-isbn','imp-year'];
+
+function saveFormValues() {
+  const d = {};
+  FORM_IDS.forEach(id => { const el = document.getElementById(id); if (el) d[id] = el.value; });
+  d.bookType = S.bookType;
+  const wd = document.getElementById('words-disp');
+  if (wd) d.wordsDisp = wd.textContent;
+  try { localStorage.setItem('buch_form', JSON.stringify(d)); } catch(e){}
+}
+
+/* Sichert jede Eingabe sofort, damit nichts verlorengeht */
+function watchFormValues() {
+  FORM_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', saveFormValues);
+    el.addEventListener('change', saveFormValues);
+  });
+}
+
 function restoreFormValues() {
-  const saved = localStorage.getItem('buch_setup');
-  if (!saved) return;
-  try {
-    const d = JSON.parse(saved);
-    Object.entries(d).forEach(([id,val]) => {
-      const el = document.getElementById(id);
-      if (el) el.value = val;
-    });
-    if (d.bookType) {
-      document.querySelectorAll('.type-chip').forEach(c => {
-        c.classList.toggle('sel', c.dataset.type === d.bookType);
-      });
-      S.bookType = d.bookType;
-    }
-    if (d.wordsDisp) document.getElementById('words-disp').textContent = d.wordsDisp;
-  } catch(e){}
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem('buch_form') || 'null'); } catch(e){}
+
+  /* Rettet Eingaben aus der alten Fassung, in der die Felder nicht wiederhergestellt wurden */
+  if (!d) {
+    try {
+      const alt = JSON.parse(localStorage.getItem('buch_setup') || 'null');
+      if (alt) {
+        const um = { title:'s-title', subtitle:'s-subtitle', author:'s-author', genre:'s-genre',
+                     topic:'s-topic', audience:'s-audience', lang:'s-lang', tone:'s-tone',
+                     chapters:'s-chapters', words:'s-words' };
+        d = {};
+        Object.entries(um).forEach(([k,id]) => { if (alt[k] != null && alt[k] !== '') d[id] = alt[k]; });
+        if (alt.impressum) {
+          const ui = { name:'imp-name', street:'imp-street', city:'imp-city', country:'imp-country',
+                       email:'imp-email', website:'imp-web', publisher:'imp-publisher',
+                       isbn:'imp-isbn', year:'imp-year' };
+          Object.entries(ui).forEach(([k,id]) => { if (alt.impressum[k]) d[id] = alt.impressum[k]; });
+        }
+        d.bookType = alt.bookType; d.wordsDisp = alt.wordsDisp;
+        if (Object.keys(d).length > 2) setTimeout(() => toast('✅ Deine Eingaben wurden wiederhergestellt'), 600);
+      }
+    } catch(e){}
+  }
+
+  if (!d) return;
+  Object.entries(d).forEach(([id,val]) => {
+    if (id === 'bookType' || id === 'wordsDisp') return;
+    const el = document.getElementById(id);
+    if (el && val != null) el.value = val;
+  });
+  if (d.bookType) {
+    document.querySelectorAll('.type-chip').forEach(c => c.classList.toggle('sel', c.dataset.type === d.bookType));
+    S.bookType = d.bookType;
+  }
+  const wd = document.getElementById('words-disp');
+  if (d.wordsDisp && wd) wd.textContent = d.wordsDisp;
+  saveFormValues();
 }
 
 /* ═══════════════════════════ API ════════════════════════════════════ */
@@ -23199,7 +23246,7 @@ function lkRenderAccepted() {
 function lkExportWord() {
   const toExp = LK.accepted.length ? LK.accepted : LK.chapters;
   if (!toExp.length) { toast('⚠ Keine Kapitel zum Exportieren'); return; }
-  const title = document.getElementById('book-title')?.value?.trim() || 'Manuskript';
+  const title = document.getElementById('s-title')?.value?.trim() || 'Manuskript';
   const fn = title.replace(/\s+/g,'-')+'-lektoriert';
   let body = '';
   toExp.forEach(ch => {
@@ -23219,7 +23266,7 @@ function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 
 /* ═══════════════════ SPEICHERN / LADEN ═════════════════════════════ */
 function saveProgress() {
-  const title = document.getElementById('book-title')?.value?.trim() || 'Buch';
+  const title = document.getElementById('s-title')?.value?.trim() || 'Buch';
   const data = {
     version: '1.0',
     savedAt: new Date().toLocaleString('de-DE'),
@@ -23227,7 +23274,7 @@ function saveProgress() {
     state: S,
     formFields: {}
   };
-  ['book-title','book-subtitle','book-type','book-genre','book-tone','book-audience','book-lang','book-chapters','book-words'].forEach(id => {
+  FORM_IDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) data.formFields[id] = el.value;
   });
@@ -23255,6 +23302,7 @@ function loadProgress(event) {
           if (el) el.value = val;
         });
       }
+      saveFormValues();
       updateStepNav();
       const lastStep = Object.entries(S.steps).filter(([,v])=>v).map(([k])=>k).pop() || 'setup';
       goStep(lastStep);

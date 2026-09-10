@@ -21415,7 +21415,10 @@ Wichtige Regeln:
 - Stil: ${setup.tone}
 - Kapitel soll spannend enden (Cliffhanger oder Überleitung), außer beim letzten Kapitel
 - Keine Zusammenfassung am Anfang
-- Direkt einsteigen ins Geschehen`;
+- Direkt einsteigen ins Geschehen
+- Vermeide abgenutzte Körper-Reaktionen wie "Herz hämmerte/raste", "Puls beschleunigte sich", "spürte, wie sich der Magen zusammenzog", "Kloß im Hals", "Schauer über den Rücken", "Adrenalin", "starrte auf/an", "atmete tief durch" — Anspannung zeigt sich über Handlung, Blick, Wortwahl oder Satztempo, nicht über diese Standardformeln
+- Dialoge müssen wie echte Gespräche klingen, nicht wie ein Drehbuch: kein Schema aus kurzer Frage → knapper Antwort ("Ja." / "Nein." / "Ich weiß.") → "nickte" → nächste Frage. Menschen antworten oft an der Frage vorbei, unterbrechen sich, wiederholen sich, lassen Sätze unvollendet. Ein einzelnes gesprochenes Wort wird im echten Gespräch meist zu einem ganzen Satz, nicht zu einer Ein-Wort-Antwort. Reaktionsgesten variieren — nicht bei jedem zweiten Austausch "nickte"
+- Reihe nicht mehrere Teilsätze mit Kommas aneinander, wo eigentlich zwei oder drei eigenständige Sätze stehen sollten (z. B. nicht "Sie tat X, dabei geschah Y, während Z im Hintergrund lag" — sondern als getrennte Sätze mit Punkt). Kommaketten unterbrechen den Lesefluss stärker als klare, kürzere Sätze mit Punkt`;
 
   try {
     const result = await callClaude(prompt, 16000);
@@ -21454,7 +21457,12 @@ ${bbResearchContext(2500)}
 **Bisheriger Text (Ende):**
 "…${last400}"
 
-Führe direkt fort, ohne Wiederholung des bisherigen Textes. Gleicher Stil, gleiche Sprache.`;
+Führe direkt fort, ohne Wiederholung des bisherigen Textes. Gleicher Stil, gleiche Sprache.
+
+Wichtige Regeln:
+- Vermeide abgenutzte Körper-Reaktionen wie "Herz hämmerte/raste", "Puls beschleunigte sich", "spürte, wie sich der Magen zusammenzog", "Kloß im Hals", "Schauer über den Rücken", "Adrenalin", "starrte auf/an", "atmete tief durch"
+- Dialoge müssen wie echte Gespräche klingen, nicht wie ein Drehbuch: kein Schema aus kurzer Frage → knapper Antwort → "nickte" → nächste Frage. Menschen antworten oft an der Frage vorbei, unterbrechen sich, lassen Sätze unvollendet. Ein einzelnes gesprochenes Wort wird im echten Gespräch meist zu einem ganzen Satz, nicht zu einer Ein-Wort-Antwort
+- Reihe nicht mehrere Teilsätze mit Kommas aneinander, wo eigentlich getrennte Sätze mit Punkt stehen sollten. Kommaketten unterbrechen den Lesefluss stärker als klare, kürzere Sätze`;
 
   try {
     const result = await callClaude(prompt, 8000);

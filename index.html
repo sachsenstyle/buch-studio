@@ -22727,6 +22727,103 @@ Halte dich an dieses Profil: Die Handschrift der Autorin bleibt erhalten, die Sc
 }
 
 /* Anweisung für EIN Kapitel: wie viele Treffer es behalten darf */
+/* ═══ KI-MUSTER ═══════════════════════════════════════════════════
+   Die drei Sachen, an denen man KI-Text im Roman sofort erkennt.
+   Werden nicht gezählt wie Floskeln, sondern im Text gesucht und
+   dem Lektorat als konkrete Fundstellen mitgegeben.               */
+
+// 1. Echo-Dialog: dieselbe kurze Replik zweimal kurz hintereinander
+function lkEchoDialog(text) {
+  const reden = [...text.matchAll(/[„"»]([^„"»«]{2,40})[""«"]/g)].map(m => m[1].trim());
+  const treffer = [];
+  for (let i = 1; i < reden.length; i++) {
+    if (reden[i] && reden[i].toLowerCase() === reden[i-1].toLowerCase() && !treffer.includes(reden[i]))
+      treffer.push(reden[i]);
+  }
+  return treffer;
+}
+
+// 2. Antithese: "nicht X, sondern Y" / "Mir ist egal X. Wichtig ist Y."
+function lkAntithese(text) {
+  const muster = [
+    /\bnicht\s+[^.!?,]{2,40},\s*sondern\b/gi,
+    /\b(?:mir\s+ist|es\s+ist\s+mir)\s+egal[^.!?]{0,60}[.!?]\s*[^.!?]{0,20}\b(?:wichtig|zählt)\b/gi,
+    /\bes\s+geht\s+nicht\s+um\b[^.!?]{0,60}[.!?]?\s*\bes\s+geht\s+um\b/gi,
+    /\bnicht\s+weil\b[^.!?]{0,50},\s*sondern\s+weil\b/gi
+  ];
+  const treffer = [];
+  muster.forEach(re => [...text.matchAll(re)].forEach(m => {
+    const t = m[0].replace(/\s+/g,' ').trim();
+    if (treffer.length < 6 && !treffer.includes(t)) treffer.push(t);
+  }));
+  return treffer;
+}
+
+// 3. Dreierreihe / gleicher Satzanfang in Folge
+function lkDreierreihe(text) {
+  const saetze = text.split(/(?<=[.!?])\s+/).map(x => x.trim()).filter(x => x);
+  const treffer = [];
+  for (let i = 0; i + 2 < saetze.length; i++) {
+    const w = saetze.slice(i, i+3).map(x => (x.match(/[A-Za-zÄÖÜäöüß]+/) || [''])[0].toLowerCase());
+    if (w[0] && w[0] === w[1] && w[1] === w[2]) {
+      const t = saetze.slice(i, i+3).join(' ');
+      if (treffer.length < 4 && !treffer.includes(t)) treffer.push(t);
+      i += 2; continue;
+    }
+    // drei sehr kurze Sätze hintereinander (Stakkato)
+    if (saetze.slice(i, i+3).every(x => x.split(/\s+/).length <= 4)) {
+      const t = saetze.slice(i, i+3).join(' ');
+      if (treffer.length < 4 && !treffer.includes(t)) treffer.push(t);
+      i += 2;
+    }
+  }
+  // zwei kurze Sätze mit gleichem Anfang ("Keine Alleingänge. Keine Improvisation.")
+  for (let i = 0; i + 1 < saetze.length; i++) {
+    const kurz = saetze.slice(i, i+2).every(x => x.split(/\s+/).length <= 5);
+    if (!kurz) continue;
+    const w = saetze.slice(i, i+2).map(x => (x.match(/[A-Za-zÄÖÜäöüß]+/) || [''])[0].toLowerCase());
+    if (w[0] && w[0] === w[1]) {
+      const t = saetze.slice(i, i+2).join(' ');
+      if (treffer.length < 4 && !treffer.some(x => x.includes(t) || t.includes(x))) treffer.push(t);
+      i++;
+    }
+  }
+  return treffer;
+}
+
+function lkKiMusterInstr(text) {
+  const echo   = lkEchoDialog(text);
+  const anti   = lkAntithese(text);
+  const dreier = lkDreierreihe(text);
+  if (!echo.length && !anti.length && !dreier.length) return '';
+
+  let out = '\n\nKI-MUSTER — hier klingt der Text nach Maschine. Diese Stellen musst du anfassen:';
+
+  if (echo.length) {
+    out += '\n\nECHO-DIALOG (dieselbe Replik zweimal):\n' +
+      echo.map(e => `- "${e}" steht zweimal direkt hintereinander.`).join('\n') +
+      '\nEinmal ist stark, zweimal ist Masche. Lass die zweite Figur nicht dasselbe sagen, ' +
+      'sondern etwas tun: Blick abwenden, Tasse abstellen, aufstehen. Oder sie schweigt und du beschreibst, was sie macht.';
+  }
+
+  if (anti.length) {
+    out += '\n\nWEG-VON-HIN-ZU (erst wegschieben, dann das Edle nachschieben):\n' +
+      anti.map(a => `- "${a}"`).join('\n') +
+      '\nDiese Figur redet wie ein Redenschreiber. Streich die zweite Hälfte. ' +
+      'Was übrig bleibt, ist meistens schon die bessere Zeile. Menschen werden in solchen Momenten kürzer, nicht feierlicher.';
+  }
+
+  if (dreier.length) {
+    out += '\n\nDREIERREIHE / STAKKATO:\n' +
+      dreier.map(d => `- "${d}"`).join('\n') +
+      '\nDrei gleich gebaute oder drei sehr kurze Sätze hintereinander erzeugen einen Marschrhythmus, ' +
+      'den kein Mensch spricht. Bau einen davon in den vorherigen Satz ein oder streich ihn.';
+  }
+
+  out += '\n\nWichtig: ersetze ein Muster nicht durch das nächste. Wenn du unsicher bist, nimm die Stelle raus statt sie umzuformulieren.';
+  return out;
+}
+
 function lkFloskelInstr(chapterText) {
   const all = lkFullText();
   const totalWords = all.split(/\s+/).filter(w => w).length;
@@ -22941,7 +23038,11 @@ REGELN:
 2. Alle Absätze, Dialoge und Zeilenumbrüche bleiben erhalten
 3. Handlung, Figuren, Namen und Fakten bleiben unverändert
 4. Der Text muss nach einem Menschen klingen, nicht nach KI
-5. Die Gesamtlänge darf um bis zu 10 % schrumpfen, mehr nicht — nur dort kürzen, wo Floskeln wegfallen${flBlock}${lkProfileContext()}`;
+5. Die Gesamtlänge darf um bis zu 10 % schrumpfen, mehr nicht — nur dort kürzen, wo Floskeln wegfallen
+6. Dialoge: keine Kette aus Frage, Einwortantwort und Nicken. Menschen reden aneinander vorbei, fallen sich ins Wort, weichen aus. Wer etwas nicht sagen will, redet über etwas anderes
+7. Keine Drehbuchform und keine Aufzählungen im Fließtext
+8. Nicht mehrere Teilsätze mit Kommas aneinanderhängen, wo Punkte natürlicher lesen
+9. Wenn eine Stelle nach Muster klingt, ist Streichen besser als Umformulieren${flBlock}${lkKiMusterInstr(ch.content)}${lkProfileContext()}`;
 
   document.getElementById('lk-output-area').style.display = 'none';
   showLoader(`Lektoriere: "${ch.title}" …`, `Modus: ${LK.mode}`);
